@@ -1,8 +1,10 @@
-import {BaasDatasource} from "./baas_datasource";
+import {BaasDatasource} from "datasource";
 import {BaasDatasourceQueryCtrl} from "./query_ctrl";
 
-class BaasConfigCtrl {}
-BaasConfigCtrl.templatUrl = 'partials/config.html';
+class BaasConfigCtrl {
+    static templateUrl: string
+}
+BaasConfigCtrl.templateUrl = 'partials/config.html';
 
 export {
     BaasDatasource as DataSource,

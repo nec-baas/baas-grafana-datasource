@@ -1,4 +1,12 @@
 export class BaasDatasource {
+    name: string;
+    baseUri: string;
+    tenantId: string;
+    appId: string;
+    appKey: string;
+    user: string;
+    password: string;
+
     /**
      * コンストラクタ
      * @param instanceSettings 設定値。config.html で設定したもの。
@@ -6,7 +14,7 @@ export class BaasDatasource {
      * @param $q Angular非同期サービス($q service)
      * @param templateSrv Grafana の TemplateSrv。本 plugin では使用しない。
      */
-    constructor(instanceSettings, backendSrv, $q, templateSrv) {
+    constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
         this.name = instanceSettings.name;
 
         this.baseUri = instanceSettings.baseUri;
