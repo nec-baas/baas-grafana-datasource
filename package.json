@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://tmurakam@git.local.antcloud.biz/gitbucket/git/antc/baas-grafana-datasource.git"
+    "url": "http://git.local.antcloud.biz/gitbucket/git/antc/baas-grafana-datasource.git"
   },
   "author": "NEC Corporation",
   "license": "Apache 2.0",
