@@ -1,0 +1,13 @@
+{
+    "name": "BaasDatasource",
+    "id": "baas-grafana-datasource",
+    "type": "datasource",
+
+    "info": {
+    },
+
+    "dependencies": {
+        "grafanaVersion": "3.x.x",
+        "plugins": []
+    }
+}
