@@ -11,7 +11,7 @@ class BaasAnnotationsQueryCtrl {
 }
 
 export {
-    BaasDatasource as DataSource,
+    BaasDatasource as Datasource,
     BaasDatasourceQueryCtrl as QueryCtrl,
     BaasConfigCtrl as ConfigCtrl,
     BaasQueryOptionsCtrl as QueryOptionsCtrl,
