@@ -23,7 +23,8 @@ export class BaasDatasource {
     constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
         this.name = instanceSettings.name;
 
-        this.baseUri = instanceSettings.baseUri;
+        this.baseUri = instanceSettings.url;
+
         this.tenantId = instanceSettings.tenantId;
         this.headers = {
             "Content-Type": "application/json",
@@ -72,19 +73,19 @@ export class BaasDatasource {
 
         const where = {
             "$and": [
-                {"createdAt": {"$gte": options.range.from}},
-                {"createdAt": {"$lte": options.range.to}},
+                {createdAt: {"$gte": options.range.from}},
+                {createdAt: {"$lte": options.range.to}}
             ]
         };
 
         return this.doRequest({
-            "url": uri,
-            "data": {
-                "where": where,
-                "order": "createdAt",
-                "limit": options.maxDataPoints
+            url: uri,
+            data: {
+                where: where,
+                order: "createdAt",
+                limit: options.maxDataPoints
             },
-            "method": "POST"
+            method: "POST"
         }).then(response => {
             const status = response.status;
             const data = response.data;
@@ -105,8 +106,8 @@ export class BaasDatasource {
             });
 
             results.push({
-                "target": targets[i],
-                "datapoints": datapoints
+                target: targets[i],
+                datapoints: datapoints
             });
         }
 
@@ -118,10 +119,13 @@ export class BaasDatasource {
      * Datasource接続テスト
      */
     testDatasource() {
-        return this.resolved({
-            status: "success",
-            title: "Success",
-            message: "Not implemented yet..."
+        return this.doRequest({
+            url: this.baseUri + "/1/_health",
+            method: "GET"
+        }).then(response => {
+            if (response.status == 200) {
+                return {status: "success", message: "Server connected", title: "Success"};
+            }
         });
     }
 
