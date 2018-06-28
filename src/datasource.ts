@@ -1,7 +1,7 @@
 //import {Promise} from 'es6-promise';
 //declare var Promise: any;
 
-import _ from 'lodash';
+//import _ from 'lodash';
 
 export default class BaasDatasource {
     name: string;
@@ -62,7 +62,7 @@ export default class BaasDatasource {
         let bucketName: string = null;
         const fieldNames: [string] = [] as [string];
 
-        for (let i = 0; i < query.targets.lengh; i++) {
+        for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名, field名
             const target = query.targets[i].target;
             const a = target.split(":", 2);
@@ -106,12 +106,14 @@ export default class BaasDatasource {
 
         for (let i = 0; i < targets.length; i++) {
             // datapoints に変換
-            const datapoints = _.map(data.results, e => {
-                const value = e[fieldNames[i]]; // TBD
+            const datapoints = [];
+            for (let i = 0; i < data.results.length; i++) {
+                const e = data.results[i];
+                const value = e[fieldNames[i]] || 0.0; // TBD
                 const ts = new Date(e["createdAt"]);
-                return [value, ts.getTime()];
-            });
 
+                datapoints.push([value, ts.getTime()]);
+            }
             results.push({
                 target: targets[i],
                 datapoints: datapoints
@@ -171,18 +173,20 @@ export default class BaasDatasource {
     }
 
     private buildQueryParameters(options: any): any {
-        options.targets = _.filter(options.targets, target => {
-            return target.target !== 'select metric';
-        });
+        const targets = [];
 
-        const targets = _.map(options.targets, target => {
-            return {
+        for (let i = 0; i < options.targets.length; i++) {
+            const target = options.targets[i];
+            if (target.target === 'select metric') {
+                continue;
+            }
+            targets.push({
                 target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
                 refId: target.refId,
                 hide: target.hide,
                 type: target.type || 'timeserie'
-            }
-        });
+            });
+        }
         options.targets = targets;
         return options;
     }
