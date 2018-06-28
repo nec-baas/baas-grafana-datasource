@@ -1,7 +1,7 @@
 //import {Promise} from 'es6-promise';
 //declare var Promise: any;
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 export default class BaasDatasource {
     name: string;
