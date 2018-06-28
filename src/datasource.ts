@@ -103,21 +103,21 @@ export default class BaasDatasource {
             });
     }
 
-    private convertResponse(targets: [string], fieldNames: [string], data: any): any {
+    private convertResponse(targets: [any], fieldNames: [string], data: any): any {
         const results = [];
 
         for (let i = 0; i < targets.length; i++) {
             // datapoints に変換
             const datapoints = [];
-            for (let i = 0; i < data.results.length; i++) {
-                const e = data.results[i];
+            for (let j = 0; j < data.results.length; j++) {
+                const e = data.results[j];
                 const value = e[fieldNames[i]] || 0.0; // TBD
                 const ts = new Date(e["createdAt"]);
 
                 datapoints.push([value, ts.getTime()]);
             }
             results.push({
-                target: targets[i],
+                target: targets[i].target,
                 datapoints: datapoints
             });
         }
