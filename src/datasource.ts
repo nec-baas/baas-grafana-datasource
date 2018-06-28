@@ -4,11 +4,7 @@ declare var Promise: any;
 export class BaasDatasource {
     name: string;
     baseUri: string;
-    tenantId: string;
-    appId: string;
-    appKey: string;
-    user: string;
-    password: string;
+    headers: any;
 
     backendSrv: any;
 
@@ -23,11 +19,15 @@ export class BaasDatasource {
         this.name = instanceSettings.name;
 
         this.baseUri = instanceSettings.baseUri;
-        this.tenantId = instanceSettings.tenantId;
-        this.appId = instanceSettings.appId;
-        this.appKey = instanceSettings.appKey;
-        this.user = instanceSettings.user;
-        this.password = instanceSettings.password;
+        this.headers = {
+            "Content-Type": "application/json",
+            "X-Tenant-Id": instanceSettings.tenantId,
+            "X-Application-Id": instanceSettings.appId,
+            "X-Application-Key": instanceSettings.appKey
+        };
+        if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
+            this.headers['Authorization'] = instanceSettings.basicAuth;
+        }
 
         this.backendSrv = backendSrv;
     }
@@ -44,11 +44,15 @@ export class BaasDatasource {
      * Datasource接続テスト
      */
     testDatasource() {
-
+        return Promise.resolve({
+            status: "success",
+            title: "Success",
+            message: "Not implemented yet..."
+        });
     }
 
     annotationQuery(options: any) {
-
+        // nop
     }
 
     /**
@@ -57,5 +61,10 @@ export class BaasDatasource {
      */
     metricFindQuery(options: any) {
         return Promise.resolve([]);
+    }
+
+    private doRequest(options: any) {
+        options.headers = this.headers;
+        return this.backendSrv.datasourceRequest(options);
     }
 }
