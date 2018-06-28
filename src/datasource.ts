@@ -85,7 +85,7 @@ export default class BaasDatasource {
             ]
         };
 
-        return this.doRequest({
+        const req = {
             url: uri,
             data: {
                 where: where,
@@ -93,12 +93,14 @@ export default class BaasDatasource {
                 limit: options.maxDataPoints
             },
             method: "POST"
-        }).then(response => {
-            const status = response.status;
-            const data = response.data;
+        };
+        return this.doRequest(req)
+            .then(response => {
+                const status = response.status;
+                const data = response.data;
 
-            return this.convertResponse(query.targets, fieldNames, data);
-        });
+                return this.convertResponse(query.targets, fieldNames, data);
+            });
     }
 
     private convertResponse(targets: [string], fieldNames: [string], data: any): any {
