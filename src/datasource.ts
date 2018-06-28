@@ -20,6 +20,7 @@ export default class BaasDatasource {
      * @param $q Angular非同期サービス($q service)
      * @param templateSrv Grafana の TemplateSrv。
      */
+    /** @ngInject */
     constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
         this.log("baas datasource: constructor");
         this.name = instanceSettings.name;

@@ -1,13 +1,6 @@
 import BaasDatasource from "./datasource";
 import {BaasDatasourceQueryCtrl} from "./query_ctrl";
-
-class BaasConfigCtrl {
-    static templateUrl = 'partials/config.html';
-    current: any;
-
-    constructor($scope) {
-    }
-}
+import {BaasConfigCtrl} from "./config_ctrl";
 
 class BaasQueryOptionsCtrl {
     static templateUrl = 'partials/query.options.html';
