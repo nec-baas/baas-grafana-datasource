@@ -3,7 +3,7 @@
 
 import * as _ from 'lodash';
 
-export class BaasDatasource {
+export default class BaasDatasource {
     name: string;
     baseUri: string;
     tenantId: string;
