@@ -2,6 +2,7 @@
 
 const gulp = require('gulp');
 const typescript  = require('gulp-typescript');
+const clean = require('gulp-clean');
 const watch = require('gulp-watch');
 
 gulp.task('copy_html',() => {
@@ -26,6 +27,10 @@ gulp.task('ts', () => {
     return gulp.src('src/*.ts')
         .pipe(tsProject())
         .pipe(gulp.dest('./dist'));
+});
+
+gulp.task('clean', () => {
+    return gulp.src('dist').pipe(clean());
 });
 
 gulp.task('watch', () => {
