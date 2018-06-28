@@ -1,6 +1,6 @@
 {
-  "name": "BaasDatasource",
-  "id": "baas-datasource",
+  "name": "NEC BaaS",
+  "id": "necbaas-datasource",
   "type": "datasource",
 
   "metrics": true,

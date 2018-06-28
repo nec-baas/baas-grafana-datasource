@@ -14,15 +14,7 @@
   },
   "author": "NEC Corporation",
   "license": "Apache 2.0",
-  "dependencies": {
-    "@nec-baas/jssdk": "^7.0.2"
-  },
-  "dependencies": {
-    "lodash": "^4.17.10"
-  },
   "devDependencies": {
-    "@types/lodash": "^4.14.110",
-    "es6-promise": "^4.2.4",
     "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.4.0",
