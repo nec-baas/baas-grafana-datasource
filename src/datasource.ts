@@ -60,7 +60,7 @@ export default class BaasDatasource {
         for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名, field名
             const target = query.targets[i].target;
-            const a = target.split(":", 2);
+            const a = target.split(".", 2);
             if (i == 0) {
                 bucketName = a[0];
             } if (i > 0 && bucketName != a[0]) {
