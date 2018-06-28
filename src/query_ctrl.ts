@@ -1,6 +1,14 @@
-///<reference path="../node_modules/grafana-sdk-mocks/app/headers/common.d.ts" />
+declare class QueryCtrl {
+    constructor($scope: any, $injector: any);
+    target: any;
+    panelCtrl: any;
+    panel: any;
+    datasource: any;
+    hasRawMode: boolean;
+    error: string;
 
-import {QueryCtrl} from "app/plugins/sdk";
+    refresh(): void;
+}
 
 export class BaasDatasourceQueryCtrl extends QueryCtrl {
 

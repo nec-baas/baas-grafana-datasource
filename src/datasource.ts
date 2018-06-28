@@ -1,4 +1,5 @@
-import {Promise} from 'es6-promise';
+//import {Promise} from 'es6-promise';
+declare var Promise: any;
 
 export class BaasDatasource {
     name: string;
