@@ -24,6 +24,7 @@
     "gulp-mocha": "^6.0.0",
     "gulp-typescript": "^4.0.2",
     "gulp-watch": "^5.0.0",
+    "istanbul": "^0.4.5",
     "mocha": "^5.2.0",
     "sinon": "^6.0.1",
     "systemjs": "^0.21.4",

@@ -63,7 +63,7 @@ export default class BaasDatasource {
             const a = target.split(".", 2);
             if (i == 0) {
                 bucketName = a[0];
-            } if (i > 0 && bucketName != a[0]) {
+            } else if (bucketName !== a[0]) {
                 return this.rejected(new Error("bucket names mismatch."));
             }
             const fieldName = a[1];
