@@ -1,14 +1,6 @@
-declare class QueryCtrl {
-    constructor($scope: any, $injector: any);
-    target: any;
-    panelCtrl: any;
-    panel: any;
-    datasource: any;
-    hasRawMode: boolean;
-    error: string;
+/// <reference path="./grafana-sdk.d.ts" />
 
-    refresh(): void;
-}
+import {QueryCtrl} from 'app/plugins/sdk';
 
 export class BaasDatasourceQueryCtrl extends QueryCtrl {
     static templateUrl = 'partials/query.editor.html';
