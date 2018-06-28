@@ -27,11 +27,11 @@ export default class BaasDatasource {
 
         this.baseUri = instanceSettings.url;
 
-        this.tenantId = instanceSettings.tenantId;
+        this.tenantId = instanceSettings.jsonData.tenantId;
         this.headers = {
             "Content-Type": "application/json",
-            "X-Application-Id": instanceSettings.appId,
-            "X-Application-Key": instanceSettings.appKey
+            "X-Application-Id": instanceSettings.jsonData.appId,
+            "X-Application-Key": instanceSettings.jsonData.appKey
         };
         if (typeof instanceSettings.basicAuth === 'string' && instanceSettings.basicAuth.length > 0) {
             this.headers['Authorization'] = instanceSettings.basicAuth;
