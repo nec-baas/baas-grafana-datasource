@@ -21,6 +21,7 @@ export class BaasDatasource {
      * @param templateSrv Grafana の TemplateSrv。
      */
     constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
+        this.log("baas datasource: constructor");
         this.name = instanceSettings.name;
 
         this.baseUri = instanceSettings.url;
@@ -40,11 +41,16 @@ export class BaasDatasource {
         this.q = $q;
     }
 
+    private log(msg: string) {
+        console.log(msg);
+    }
+
     /**
      * データ取得
      * @param options
      */
     query(options: any) {
+        this.log("query: " + JSON.stringify(options));
         const query = this.buildQueryParameters(options);
         query.targets = query.targets.filter(t => !t.hide);
 
@@ -119,6 +125,7 @@ export class BaasDatasource {
      * Datasource接続テスト
      */
     testDatasource() {
+        this.log("testDatasource");
         return this.doRequest({
             url: this.baseUri + "/1/_health",
             method: "GET"
@@ -138,22 +145,26 @@ export class BaasDatasource {
      * @param options
      */
     metricFindQuery(options: any) {
+        this.log("metricFindQuery");
         return this.resolved([]);
     }
 
     private resolved(data: any): any {
+        this.log("resolved");
         const deferred = this.q.defer();
         deferred.resolve(data);
         return deferred.promise;
     }
 
     private rejected(data: any): any {
+        this.log("rejected");
         const deferred = this.q.defer();
         deferred.reject(data);
         return deferred.promise;
     }
 
     private doRequest(options: any): any {
+        this.log("doRequest");
         options.headers = this.headers;
         return this.backendSrv.datasourceRequest(options);
     }
