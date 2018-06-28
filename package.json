@@ -6,7 +6,7 @@
   "scripts": {
     "build": "gulp",
     "watch": "gulp watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "gulp test"
   },
   "repository": {
     "type": "git",
@@ -15,12 +15,16 @@
   "author": "NEC Corporation",
   "license": "Apache 2.0",
   "devDependencies": {
+    "@types/chai": "^4.1.4",
+    "@types/mocha": "^5.2.3",
     "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
     "gulp": "^3.9.1",
     "gulp-clean": "^0.4.0",
+    "gulp-mocha": "^6.0.0",
     "gulp-typescript": "^4.0.2",
     "gulp-watch": "^5.0.0",
     "mocha": "^5.2.0",
+    "systemjs": "^0.21.4",
     "typescript": "^2.9.2"
   }
 }
