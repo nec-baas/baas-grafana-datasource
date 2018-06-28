@@ -13,9 +13,14 @@ class BaasQueryOptionsCtrl {
     static templateUrl = 'partials/query.options.html';
 }
 
+class BaasAnnotationsQueryCtrl {
+    static templateUrl = 'partials/annotations.editor.html';
+}
+
 export {
     BaasDatasource as DataSource,
     BaasDatasourceQueryCtrl as QueryCtrl,
     BaasConfigCtrl as ConfigCtrl,
-    BaasQueryOptionsCtrl as QueryOptionsCtrl
+    BaasQueryOptionsCtrl as QueryOptionsCtrl,
+    BaasAnnotationsQueryCtrl as AnnotationsQueryCtrl
 };
