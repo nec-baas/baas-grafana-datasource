@@ -18,6 +18,7 @@
     "@nec-baas/jssdk": "^7.0.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.110",
     "es6-promise": "^4.2.4",
     "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
     "gulp": "^3.9.1",
