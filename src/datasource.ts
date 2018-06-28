@@ -1,8 +1,3 @@
-//import {Promise} from 'es6-promise';
-//declare var Promise: any;
-
-//import _ from 'lodash';
-
 export default class BaasDatasource {
     name: string;
     baseUri: string;

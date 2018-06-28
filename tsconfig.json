@@ -9,7 +9,6 @@
     "experimentalDecorators": true,
     "noImplicitAny": false,
     "types": [
-      "es6-promise"
     ]
   }
 }
