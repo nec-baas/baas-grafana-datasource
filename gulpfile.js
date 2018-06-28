@@ -48,8 +48,9 @@ gulp.task('clean', () => {
 });
 
 gulp.task('watch', () => {
-    gulp.watch('src/*.ts', ['ts']);
-    gulp.watch(['src/**/*.html', 'src/**/*.css', 'src/img/*', 'src/plugin.json', 'README.md', 'LICENSE'], ['copy'])
+    gulp.watch('src/*.ts', ['ts', 'test-ts']);
+    gulp.watch('src/spec/*.ts', ['test-ts']);
+    gulp.watch(['src/**/*.html', 'src/**/*.css', 'src/img/*', 'src/plugin.json', 'README.md', 'LICENSE'], ['copy']);
 });
 
 gulp.task('default', ['copy', 'ts']);
