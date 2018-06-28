@@ -1,5 +1,5 @@
 //import {Promise} from 'es6-promise';
-declare var Promise: any;
+//declare var Promise: any;
 
 import * as _ from 'lodash';
 
@@ -11,6 +11,7 @@ export class BaasDatasource {
 
     backendSrv: any;
     templateSrv: any;
+    q: any;
 
     /**
      * コンストラクタ
@@ -34,6 +35,8 @@ export class BaasDatasource {
         }
 
         this.backendSrv = backendSrv;
+        this.templateSrv = templateSrv;
+        this.q = $q;
     }
 
     /**
@@ -45,11 +48,8 @@ export class BaasDatasource {
         query.targets = query.targets.filter(t => !t.hide);
 
         if (query.targets.length <= 0) {
-            return Promise.resolve({data: []}); // no targets
+            return this.resolved({data: []}) // no targets
         }
-
-        //const allResults = [];
-        //const promises = [];
 
         let bucketName: string = null;
         const fieldNames: [string] = [] as [string];
@@ -61,7 +61,7 @@ export class BaasDatasource {
             if (i == 0) {
                 bucketName = a[0];
             } if (i > 0 && bucketName != a[0]) {
-                return Promise.reject(new Error("bucket names mismatch."))
+                return this.rejected(new Error("bucket names mismatch."));
             }
             const fieldName = a[1];
             fieldNames.push(fieldName);
@@ -77,7 +77,7 @@ export class BaasDatasource {
             ]
         };
 
-        const promise = this.doRequest({
+        return this.doRequest({
             "url": uri,
             "data": {
                 "where": where,
@@ -110,7 +110,7 @@ export class BaasDatasource {
             });
         }
 
-        return results;
+        return {"data": results};
     }
 
 
@@ -118,7 +118,7 @@ export class BaasDatasource {
      * Datasource接続テスト
      */
     testDatasource() {
-        return Promise.resolve({
+        return this.resolved({
             status: "success",
             title: "Success",
             message: "Not implemented yet..."
@@ -134,7 +134,19 @@ export class BaasDatasource {
      * @param options
      */
     metricFindQuery(options: any) {
-        return Promise.resolve([]);
+        return this.resolved([]);
+    }
+
+    private resolved(data: any): any {
+        const deferred = this.q.defer();
+        deferred.resolve(data);
+        return deferred.promise;
+    }
+
+    private rejected(data: any): any {
+        const deferred = this.q.defer();
+        deferred.reject(data);
+        return deferred.promise;
     }
 
     private doRequest(options: any): any {
