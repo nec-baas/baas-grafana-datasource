@@ -13,6 +13,10 @@ export default class BaasDatasource {
     templateSrv: any;
     q: any;
 
+    private log(msg: string) {
+        //console.log(msg);
+    }
+
     /**
      * コンストラクタ
      * @param instanceSettings 設定値。config.html で設定したもの。
@@ -40,10 +44,6 @@ export default class BaasDatasource {
         this.backendSrv = backendSrv;
         this.templateSrv = templateSrv;
         this.q = $q;
-    }
-
-    private log(msg: string) {
-        console.log(msg);
     }
 
     /**

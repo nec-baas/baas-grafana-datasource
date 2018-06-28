@@ -4,8 +4,8 @@ export class BaasConfigCtrl {
 
     constructor($scope) {
         console.log("BaasConfigCtrl: constructor");
-        this.current.jsonData.tenantId = this.current.jsonData.tenantId || "-";
-        this.current.jsonData.appId = this.current.jsonData.appId || "-";
-        this.current.jsonData.appKey = this.current.jsonData.appKey || "-";
+        this.current.jsonData.tenantId = this.current.jsonData.tenantId || "";
+        this.current.jsonData.appId = this.current.jsonData.appId || "";
+        this.current.jsonData.appKey = this.current.jsonData.appKey || "";
     }
 }
