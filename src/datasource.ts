@@ -1,3 +1,5 @@
+import {Promise} from 'es6-promise';
+
 export class BaasDatasource {
     name: string;
     baseUri: string;
@@ -7,10 +9,12 @@ export class BaasDatasource {
     user: string;
     password: string;
 
+    backendSrv: any;
+
     /**
      * コンストラクタ
      * @param instanceSettings 設定値。config.html で設定したもの。
-     * @param backendSrv Grafana の BackendSrv。本 plugin では使用しない。
+     * @param backendSrv Grafana の BackendSrv。
      * @param $q Angular非同期サービス($q service)
      * @param templateSrv Grafana の TemplateSrv。本 plugin では使用しない。
      */
@@ -23,6 +27,8 @@ export class BaasDatasource {
         this.appKey = instanceSettings.appKey;
         this.user = instanceSettings.user;
         this.password = instanceSettings.password;
+
+        this.backendSrv = backendSrv;
     }
 
     /**
@@ -44,7 +50,11 @@ export class BaasDatasource {
 
     }
 
+    /**
+     * Metric検索。本 plugin では NOP。
+     * @param options
+     */
     metricFindQuery(options: any) {
-
+        return Promise.resolve([]);
     }
 }
