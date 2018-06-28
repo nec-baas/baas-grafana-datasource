@@ -1,13 +1,27 @@
 {
-    "name": "BaasDatasource",
-    "id": "baas-grafana-datasource",
-    "type": "datasource",
+  "name": "BaasDatasource",
+  "id": "baas-grafana-datasource",
+  "type": "datasource",
 
-    "info": {
-    },
+  "partials": {
+    "config": "public/app/plugins/datasource/baas-grafana-datasource/partials/config.html"
+  },
 
-    "dependencies": {
-        "grafanaVersion": "3.x.x",
-        "plugins": []
+  "metrics": true,
+  "annotations": false,
+
+  "info": {
+    "description": "Datasource for NEC Baas",
+    "author": {
+      "name": "NEC Corporation",
+      "url": ""
     }
+  },
+  "version": "0.0.1",
+  "updated": "2018-06-28",
+
+  "dependencies": {
+    "grafanaVersion": "3.x.x",
+    "plugins": []
+  }
 }
