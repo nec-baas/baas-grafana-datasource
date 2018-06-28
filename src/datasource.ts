@@ -29,7 +29,7 @@ export class BaasDatasource {
      * データ取得
      * @param options
      */
-    query(options) {
+    query(options: any) {
 
     }
 
@@ -40,11 +40,11 @@ export class BaasDatasource {
 
     }
 
-    annotationQuery(options) {
+    annotationQuery(options: any) {
 
     }
 
-    metricFindQuery(options) {
+    metricFindQuery(options: any) {
 
     }
 }
