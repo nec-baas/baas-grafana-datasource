@@ -1,17 +1,13 @@
 {
   "name": "BaasDatasource",
-  "id": "baas-grafana-datasource",
+  "id": "baas-datasource",
   "type": "datasource",
-
-  "partials": {
-    "config": "public/app/plugins/datasource/baas-grafana-datasource/partials/config.html"
-  },
 
   "metrics": true,
   "annotations": false,
 
   "info": {
-    "description": "Datasource for NEC Baas",
+    "description": "NEC BaaS datasource",
     "author": {
       "name": "NEC Corporation",
       "url": ""
