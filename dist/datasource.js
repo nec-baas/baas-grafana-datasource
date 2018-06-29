@@ -59,8 +59,8 @@ System.register([], function (exports_1, context_1) {
                             tsField = t[1];
                         }
                         tsFields.push(tsField);
-                        t = target.split(".", 2);
-                        if (t.length !== 2) {
+                        t = target.split(".");
+                        if (t.length < 2) {
                             return this.rejected(new Error("Bad target."));
                         }
                         if (i == 0) {
@@ -69,7 +69,8 @@ System.register([], function (exports_1, context_1) {
                         else if (bucketName !== t[0]) {
                             return this.rejected(new Error("bucket names mismatch."));
                         }
-                        var fieldName = t[1];
+                        t.shift();
+                        var fieldName = t.join(".");
                         fieldNames.push(fieldName);
                     }
                     // URI for long query

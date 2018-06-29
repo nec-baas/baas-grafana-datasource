@@ -58,5 +58,5 @@ JSON の深い階層のデータを取得する場合は、fieldName にキー�
 
     bucket1.payload.0.temperature@payload.0.timestamp
 
-
+なお、日付文字列は JavaScript の Date.parse() でパースできるフォーマットでなければなりません。
 
