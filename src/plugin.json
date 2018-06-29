@@ -11,10 +11,10 @@
     "author": {
       "name": "NEC Corporation",
       "url": ""
-    }
+    },
+    "version": "0.0.3",
+    "updated": "2018-06-29"
   },
-  "version": "0.0.3",
-  "updated": "2018-06-29",
 
   "dependencies": {
     "grafanaVersion": "5.x.x",
