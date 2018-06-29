@@ -1,4 +1,41 @@
-export default class BaasDatasource {
+/**
+ * Target spec
+ */
+export class TargetSpec {
+    /** target string */
+    target: string;
+    /** bucket name */
+    bucketName: string;
+    /** field name */
+    fieldName: string;
+    /** timestamp field name */
+    tsField: string;
+
+    constructor(target: string) {
+        this.target = target;
+
+        // timestamp フィールド指定を取り出す
+        let t = target.split("@", 2);
+        if (t.length == 2) {
+            target = t[0];
+            this.tsField = t[1];
+        }
+
+        // bucket名、フィールド名を分割
+        t = target.split(".")
+        if (t.length < 2) {
+            throw new Error("Bad target.");
+        }
+        this.bucketName = t[0];
+        t.shift();
+        this.fieldName = t.join(".");
+    }
+}
+
+/**
+ * BaaS Datasource
+ */
+export class BaasDatasource {
     name: string;
     baseUri: string;
     tenantId: string;
@@ -57,55 +94,29 @@ export default class BaasDatasource {
             return this.resolved({data: []}) // no targets
         }
 
-        let bucketName: string = null;
-        const fieldNames: string[] = [];
-        const tsFields: string[] = [];
-        let mainTsField = null;
-
+        const targets: TargetSpec[] = [];
         for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名.field名
-            let target = query.targets[i].target;
-            if (target == null) {
+            const t = query.targets[i].target;
+            if (t == null) {
                 continue;
             }
 
-            // timestamp フィールド指定を取り出す
-            let tsField = null;
-            let t = target.split("@", 2);
-            if (t.length == 2) {
-                target = t[0];
-                tsField = t[1];
-                if (mainTsField == null) {
-                    mainTsField = tsField;
-                }
+            try {
+                const target = new TargetSpec(t);
+                targets.push(target);
+            } catch (e) {
+                return this.rejected(e);
             }
-            tsFields.push(tsField);
-
-            // bucket名、フィールド名を分割
-            t = target.split(".")
-            if (t.length < 2) {
-                return this.rejected(new Error("Bad target."));
-            }
-            if (bucketName == null) {
-                bucketName = t[0];
-            } else if (bucketName !== t[0]) {
-                return this.rejected(new Error("bucket names mismatch."));
-            }
-            t.shift();
-            const fieldName = t.join(".");
-            fieldNames.push(fieldName);
         }
-        if (bucketName == null) {
+        if (targets.length == 0) {
             return this.resolved({data: []}) // no targets
         }
+        const mainTsField = targets[0].tsField || "createdAt";
+        const bucketName = targets[0].bucketName;
 
         // URI for long query
         const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
-
-        // 主タイムスタンプフィールド名
-        if (mainTsField == null) {
-            mainTsField = "createdAt";
-        }
 
         // 検索条件
         const gte = {};
@@ -131,16 +142,16 @@ export default class BaasDatasource {
                 const status = response.status;
                 const data = response.data;
 
-                return this.convertResponse(query.targets, fieldNames, tsFields, data);
+                return this.convertResponse(targets, data);
             });
     }
 
-    convertResponse(targets: any[], fieldNames: string[], tsFields: string[], data: any): any {
+    convertResponse(targets: TargetSpec[], data: any): any {
         const results = [];
 
         for (let i = 0; i < targets.length; i++) {
-            const key = fieldNames[i];
-            const tsField = tsFields[i];
+            const key = targets[i].fieldName;
+            const tsField = targets[i].tsField;
 
             // datapoints に変換
             const datapoints = [];
