@@ -36,7 +36,9 @@ describe('Datasource', () => {
     const createInstance = () => {
         const instanceSettings = createInstanceSettings();
         const backendSrv = {};
-        const templateSrv = {};
+        const templateSrv = {
+            replace: (s) => { return s; }
+        };
         const $q = createQ();
 
         const ds = new BaasDatasource(instanceSettings, backendSrv, $q, templateSrv);
@@ -65,6 +67,36 @@ describe('Datasource', () => {
         });
     });
 
+    it('should query with one target', (done) => {
+        const ds = createInstance();
+        ds.backendSrv.datasourceRequest = () => {
+            return new Promise((resolve, reject) => {
+                resolve({
+                    status: 200,
+                    data: {
+                        results: []
+                    }
+                });
+            });
+        };
+
+        const options = {
+            range: {
+                from: "2018-01-01T00:00:00.000Z",
+                to: "2018-02-01T00:00:00.000Z"
+            },
+            targets: [{
+                target: "bucket1.field1@tsfield",
+            }]
+        };
+
+        const promise = ds.query(options);
+        promise.then((resp) => {
+            assert.equal(resp.data.length, 1); // TBD
+            done();
+        });
+    });
+
     it('should convertResponse works', () => {
         const ds = createInstance();
 
@@ -87,8 +119,11 @@ describe('Datasource', () => {
             ]
         };
 
-        const res = ds.convertResponse([{target: "t1"}, {target: "t2"}],
-            ["temperature", "payload.0.humidity"], response);
+        const res = ds.convertResponse(
+            [{target: "t1"}, {target: "t2"}],
+            ["temperature", "payload.0.humidity"],
+            [null, "createdAt"],
+            response);
 
         const results = res.data;
         assert.equal(results.length, 2);

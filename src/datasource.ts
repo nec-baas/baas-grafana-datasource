@@ -8,6 +8,9 @@ export default class BaasDatasource {
     templateSrv: any;
     q: any;
 
+    // TimeStamp が格納されたフィールド名の候補
+    static TimeStampFields = ["createdAt", "updatedAt"];
+
     private log(msg: string) {
         //console.log(msg);
     }
@@ -56,20 +59,29 @@ export default class BaasDatasource {
 
         let bucketName: string = null;
         const fieldNames: string[] = [];
+        const tsFields: string[] = [];
 
         for (let i = 0; i < query.targets.length; i++) {
-            // metric target: バケット名, field名
-            const target = query.targets[i].target;
-            const a = target.split(".", 2);
-            if (a.length !== 2) {
+            // metric target: バケット名.field名
+            let target = query.targets[i].target;
+            let tsField = null;
+            let t = target.split("@", 2);
+            if (t.length == 2) {
+                target = t[0];
+                tsField = t[1];
+            }
+            tsFields.push(tsField);
+
+            t = target.split(".", 2);
+            if (t.length !== 2) {
                 return this.rejected(new Error("Bad target."));
             }
             if (i == 0) {
-                bucketName = a[0];
-            } else if (bucketName !== a[0]) {
+                bucketName = t[0];
+            } else if (bucketName !== t[0]) {
                 return this.rejected(new Error("bucket names mismatch."));
             }
-            const fieldName = a[1];
+            const fieldName = t[1];
             fieldNames.push(fieldName);
         }
 
@@ -97,22 +109,23 @@ export default class BaasDatasource {
                 const status = response.status;
                 const data = response.data;
 
-                return this.convertResponse(query.targets, fieldNames, data);
+                return this.convertResponse(query.targets, fieldNames, tsFields, data);
             });
     }
 
-    convertResponse(targets: any[], fieldNames: string[], data: any): any {
+    convertResponse(targets: any[], fieldNames: string[], tsFields: string[], data: any): any {
         const results = [];
 
         for (let i = 0; i < targets.length; i++) {
-            const keys: string[] = fieldNames[i].split(".");
+            const key = fieldNames[i];
+            const tsField = tsFields[i];
 
             // datapoints に変換
             const datapoints = [];
             for (let j = 0; j < data.results.length; j++) {
                 const e = data.results[j];
-                const value = this.extractValue(e, keys);
-                const ts = new Date(e["createdAt"]);
+                const value = this.extractValue(e, key);
+                const ts = this.extractTimestamp(e, tsField);
 
                 datapoints.push([value, ts.getTime()]);
             }
@@ -125,12 +138,40 @@ export default class BaasDatasource {
         return {"data": results};
     }
 
-    extractValue(obj: any, keys: string[]): any {
+    /**
+     * JSON から特定フィールドの値を取得する
+     * @param obj JSON Object
+     * @param {string} key フィールド指定
+     * @returns {any} 値
+     */
+    extractValue(obj: any, key: string): any {
+        const keys = key.split('.');
         for (let i = 0; i < keys.length; i++) {
             const key = keys[i];
             obj = obj[key];
         }
         return obj;
+    }
+
+    /**
+     * JSON からタイムスタンプ値を取り出す
+     * @param obj JSON Object
+     * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
+     * @returns {Date} タイムスタンプ
+     */
+    extractTimestamp(obj: any, tsField: string): Date {
+        if (tsField != null) {
+            return new Date(this.extractValue(obj, tsField));
+        }
+
+        for (let i = 0; i < BaasDatasource.TimeStampFields.length; i++) {
+            const key = BaasDatasource.TimeStampFields[i];
+            if (key in obj) {
+                // 値は文字列(dateString)または Unix epoch millis
+                return new Date(obj[key]);
+            }
+        }
+        return null;
     }
 
     /**
