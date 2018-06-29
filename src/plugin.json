@@ -13,11 +13,11 @@
       "url": ""
     }
   },
-  "version": "0.0.1",
-  "updated": "2018-06-28",
+  "version": "0.0.2",
+  "updated": "2018-06-29",
 
   "dependencies": {
-    "grafanaVersion": "3.x.x",
+    "grafanaVersion": "5.x.x",
     "plugins": []
   }
 }
