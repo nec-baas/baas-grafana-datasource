@@ -40,6 +40,15 @@ Dashboardを作成し、Data Source に上記で作成したデータソース�
 
 複数のクエリを指定することができますが、全クエリの bucketName はすべて同一でなければなりません。
 
+JSON の深い階層のデータを取得する場合は、fieldName にキー名を '.' で連携して指定することができます。
+(配列の場合は要素番号)。
+
+例えば以下のようなデータがあったとき、
+
+    // 対象データ
+    { payload: [ { temperature: 26.5, ... } ], createdAt: "2018-06-29T00:00:00.000Z" }
+    
+上記データから temperature の値を抽出する場合は、fieldName には "payload.0.temperature" と指定します。
 
 
 
