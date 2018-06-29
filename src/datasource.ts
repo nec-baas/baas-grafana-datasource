@@ -88,29 +88,20 @@ export class BaasDatasource {
     query(options: any) {
         this.log("query: " + JSON.stringify(options));
         const query = this.buildQueryParameters(options);
-        query.targets = query.targets.filter(t => !t.hide);
+        query.targets = query.targets
+            .filter(t => !t.hide)
+            .filter(t => t.target != null);
 
         if (query.targets.length <= 0) {
             return this.resolved({data: []}) // no targets
         }
 
-        const targets: TargetSpec[] = [];
-        for (let i = 0; i < query.targets.length; i++) {
-            // metric target: バケット名.field名
-            const t = query.targets[i].target;
-            if (t == null) {
-                continue;
-            }
-
-            try {
-                const target = new TargetSpec(t);
-                targets.push(target);
-            } catch (e) {
-                return this.rejected(e);
-            }
-        }
-        if (targets.length == 0) {
-            return this.resolved({data: []}) // no targets
+        let targets: TargetSpec[];
+        try {
+            targets = query.targets
+                .map(t => new TargetSpec(t.target));
+        } catch (e) {
+            return this.rejected(e);
         }
         const mainTsField = targets[0].tsField || "createdAt";
         const bucketName = targets[0].bucketName;
