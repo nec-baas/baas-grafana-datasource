@@ -53,4 +53,4 @@ gulp.task('watch', () => {
     gulp.watch(['src/**/*.html', 'src/**/*.css', 'src/img/*', 'src/plugin.json', 'README.md', 'LICENSE'], ['copy']);
 });
 
-gulp.task('default', ['copy', 'ts']);
+gulp.task('default', ['copy', 'ts', 'test-ts']);
