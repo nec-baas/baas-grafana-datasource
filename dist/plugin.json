@@ -1,0 +1,23 @@
+{
+  "name": "NEC BaaS",
+  "id": "necbaas-datasource",
+  "type": "datasource",
+
+  "metrics": true,
+  "annotations": false,
+
+  "info": {
+    "description": "NEC BaaS datasource",
+    "author": {
+      "name": "NEC Corporation",
+      "url": ""
+    }
+  },
+  "version": "0.0.1",
+  "updated": "2018-06-28",
+
+  "dependencies": {
+    "grafanaVersion": "3.x.x",
+    "plugins": []
+  }
+}
