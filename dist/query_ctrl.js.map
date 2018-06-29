@@ -1,1 +1,0 @@
-{"version":3,"file":"query_ctrl.js","sourceRoot":"","sources":["query_ctrl.ts"],"names":["BaasDatasourceQueryCtrl","BaasDatasourceQueryCtrl.constructor"],"mappings":"AAAA,iFAAiF;;;;;;;;;;;;;;;YAIjF;gBAA6CA,2CAASA;gBAAtDA;oBAA6CC,8BAASA;gBAEtDA,CAACA;gBAADD,8BAACA;YAADA,CAACA,AAFD,EAA6C,eAAS,EAErD;YAFD,6DAEC,CAAA"}

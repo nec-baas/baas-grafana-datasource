@@ -6,6 +6,7 @@ export default class BaasDatasource {
     backendSrv: any;
     templateSrv: any;
     q: any;
+    static TimeStampFields: string[];
     private log;
     /**
      * コンストラクタ
@@ -21,8 +22,21 @@ export default class BaasDatasource {
      * @param options
      */
     query(options: any): any;
-    convertResponse(targets: any[], fieldNames: string[], data: any): any;
-    extractValue(obj: any, keys: string[]): any;
+    convertResponse(targets: any[], fieldNames: string[], tsFields: string[], data: any): any;
+    /**
+     * JSON から特定フィールドの値を取得する
+     * @param obj JSON Object
+     * @param {string} key フィールド指定
+     * @returns {any} 値
+     */
+    extractValue(obj: any, key: string): any;
+    /**
+     * JSON からタイムスタンプ値を取り出す
+     * @param obj JSON Object
+     * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
+     * @returns {Date} タイムスタンプ
+     */
+    extractTimestamp(obj: any, tsField: string): Date;
     /**
      * Datasource接続テスト
      */

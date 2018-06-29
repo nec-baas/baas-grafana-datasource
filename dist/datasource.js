@@ -48,20 +48,28 @@ System.register([], function (exports_1, context_1) {
                     }
                     var bucketName = null;
                     var fieldNames = [];
+                    var tsFields = [];
                     for (var i = 0; i < query.targets.length; i++) {
-                        // metric target: バケット名, field名
+                        // metric target: バケット名.field名
                         var target = query.targets[i].target;
-                        var a = target.split(".", 2);
-                        if (a.length !== 2) {
+                        var tsField = null;
+                        var t = target.split("@", 2);
+                        if (t.length == 2) {
+                            target = t[0];
+                            tsField = t[1];
+                        }
+                        tsFields.push(tsField);
+                        t = target.split(".", 2);
+                        if (t.length !== 2) {
                             return this.rejected(new Error("Bad target."));
                         }
                         if (i == 0) {
-                            bucketName = a[0];
+                            bucketName = t[0];
                         }
-                        else if (bucketName !== a[0]) {
+                        else if (bucketName !== t[0]) {
                             return this.rejected(new Error("bucket names mismatch."));
                         }
-                        var fieldName = a[1];
+                        var fieldName = t[1];
                         fieldNames.push(fieldName);
                     }
                     // URI for long query
@@ -85,19 +93,20 @@ System.register([], function (exports_1, context_1) {
                         .then(function (response) {
                         var status = response.status;
                         var data = response.data;
-                        return _this.convertResponse(query.targets, fieldNames, data);
+                        return _this.convertResponse(query.targets, fieldNames, tsFields, data);
                     });
                 };
-                BaasDatasource.prototype.convertResponse = function (targets, fieldNames, data) {
+                BaasDatasource.prototype.convertResponse = function (targets, fieldNames, tsFields, data) {
                     var results = [];
                     for (var i = 0; i < targets.length; i++) {
-                        var keys = fieldNames[i].split(".");
+                        var key = fieldNames[i];
+                        var tsField = tsFields[i];
                         // datapoints に変換
                         var datapoints = [];
                         for (var j = 0; j < data.results.length; j++) {
                             var e = data.results[j];
-                            var value = this.extractValue(e, keys);
-                            var ts = new Date(e["createdAt"]);
+                            var value = this.extractValue(e, key);
+                            var ts = this.extractTimestamp(e, tsField);
                             datapoints.push([value, ts.getTime()]);
                         }
                         results.push({
@@ -107,12 +116,38 @@ System.register([], function (exports_1, context_1) {
                     }
                     return { "data": results };
                 };
-                BaasDatasource.prototype.extractValue = function (obj, keys) {
+                /**
+                 * JSON から特定フィールドの値を取得する
+                 * @param obj JSON Object
+                 * @param {string} key フィールド指定
+                 * @returns {any} 値
+                 */
+                BaasDatasource.prototype.extractValue = function (obj, key) {
+                    var keys = key.split('.');
                     for (var i = 0; i < keys.length; i++) {
-                        var key = keys[i];
-                        obj = obj[key];
+                        var key_1 = keys[i];
+                        obj = obj[key_1];
                     }
                     return obj;
+                };
+                /**
+                 * JSON からタイムスタンプ値を取り出す
+                 * @param obj JSON Object
+                 * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
+                 * @returns {Date} タイムスタンプ
+                 */
+                BaasDatasource.prototype.extractTimestamp = function (obj, tsField) {
+                    if (tsField != null) {
+                        return new Date(this.extractValue(obj, tsField));
+                    }
+                    for (var i = 0; i < BaasDatasource.TimeStampFields.length; i++) {
+                        var key = BaasDatasource.TimeStampFields[i];
+                        if (key in obj) {
+                            // 値は文字列(dateString)または Unix epoch millis
+                            return new Date(obj[key]);
+                        }
+                    }
+                    return null;
                 };
                 /**
                  * Datasource接続テスト
@@ -173,6 +208,8 @@ System.register([], function (exports_1, context_1) {
                     options.targets = targets;
                     return options;
                 };
+                // TimeStamp が格納されたフィールド名の候補
+                BaasDatasource.TimeStampFields = ["createdAt", "updatedAt"];
                 return BaasDatasource;
             }());
             exports_1("default", BaasDatasource);
