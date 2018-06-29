@@ -60,6 +60,7 @@ export default class BaasDatasource {
         let bucketName: string = null;
         const fieldNames: string[] = [];
         const tsFields: string[] = [];
+        let mainTsField = null;
 
         for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名.field名
@@ -74,6 +75,9 @@ export default class BaasDatasource {
             if (t.length == 2) {
                 target = t[0];
                 tsField = t[1];
+                if (mainTsField == null) {
+                    mainTsField = tsField;
+                }
             }
             tsFields.push(tsField);
 
@@ -95,15 +99,22 @@ export default class BaasDatasource {
             return this.resolved({data: []}) // no targets
         }
 
-
         // URI for long query
         const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
 
+        // 主タイムスタンプフィールド名
+        if (mainTsField == null) {
+            mainTsField = "createdAt";
+        }
+
+        // 検索条件
+        const gte = {};
+        gte[mainTsField] = {"$gte": options.range.from};
+        const lte = {};
+        lte[mainTsField] = {"$lte": options.range.to}
+
         const where = {
-            "$and": [
-                {createdAt: {"$gte": options.range.from}},
-                {createdAt: {"$lte": options.range.to}}
-            ]
+            "$and": [ gte, lte ]
         };
 
         const req = {
