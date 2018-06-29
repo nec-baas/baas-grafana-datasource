@@ -55,12 +55,15 @@ export default class BaasDatasource {
         }
 
         let bucketName: string = null;
-        const fieldNames: [string] = [] as [string];
+        const fieldNames: string[] = [];
 
         for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名, field名
             const target = query.targets[i].target;
             const a = target.split(".", 2);
+            if (a.length !== 2) {
+                return this.rejected(new Error("Bad target."));
+            }
             if (i == 0) {
                 bucketName = a[0];
             } else if (bucketName !== a[0]) {
@@ -98,15 +101,17 @@ export default class BaasDatasource {
             });
     }
 
-    private convertResponse(targets: [any], fieldNames: [string], data: any): any {
+    convertResponse(targets: any[], fieldNames: string[], data: any): any {
         const results = [];
 
         for (let i = 0; i < targets.length; i++) {
+            const keys: string[] = fieldNames[i].split(".");
+
             // datapoints に変換
             const datapoints = [];
             for (let j = 0; j < data.results.length; j++) {
                 const e = data.results[j];
-                const value = e[fieldNames[i]] || 0.0; // TBD
+                const value = this.extractValue(e, keys);
                 const ts = new Date(e["createdAt"]);
 
                 datapoints.push([value, ts.getTime()]);
@@ -120,6 +125,13 @@ export default class BaasDatasource {
         return {"data": results};
     }
 
+    extractValue(obj: any, keys: string[]): any {
+        for (let i = 0; i < keys.length; i++) {
+            const key = keys[i];
+            obj = obj[key];
+        }
+        return obj;
+    }
 
     /**
      * Datasource接続テスト
