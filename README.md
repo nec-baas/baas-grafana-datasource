@@ -41,13 +41,22 @@ Dashboardを作成し、Data Source に上記で作成したデータソース�
 複数のクエリを指定することができますが、全クエリの bucketName はすべて同一でなければなりません。
 
 JSON の深い階層のデータを取得する場合は、fieldName にキー名(配列の場合は要素番号)を '.' で連結して指定することができます。
-例えば以下のようなデータがあったとき、
+
+例えば以下のようなデータがバケット "bucket1" にあるとき、
 
     // 対象データ
-    { payload: [ { temperature: 26.5, ... } ], createdAt: "2018-06-29T00:00:00.000Z" }
+    { payload: [ { temperature: 26.5, timestamp: "2018-01-01T00:00:00.000Z" } ], createdAt: "2018-06-29T00:00:00.000Z" }
     
-上記データから temperature の値を抽出する場合は、fieldName は payload.0.temperature となります。
+上記データから temperature の値を抽出する場合は、クエリ条件には以下のように指定します。
 
+    bucket1.payload.0.temperature
+
+また、タイムスタンプの値は "createdAt" または "updatedAt" の値から自動的に抽出されます。
+これ以外のフィールドから取得したい場合は、クエリ条件の末尾に "@" とタイムスタンプフィールド名を指定してください。
+タイムスタンプフィールドが JSON の深い階層にある場合、fieldName と同様に '.' で連結して指定することができます。
+上記の例では以下のように指定することができます。
+
+    bucket1.payload.0.temperature@payload.0.timestamp
 
 
 
