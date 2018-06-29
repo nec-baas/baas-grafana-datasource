@@ -64,6 +64,11 @@ export default class BaasDatasource {
         for (let i = 0; i < query.targets.length; i++) {
             // metric target: バケット名.field名
             let target = query.targets[i].target;
+            if (target == null) {
+                continue;
+            }
+
+            // timestamp フィールド指定を取り出す
             let tsField = null;
             let t = target.split("@", 2);
             if (t.length == 2) {
@@ -72,11 +77,12 @@ export default class BaasDatasource {
             }
             tsFields.push(tsField);
 
+            // bucket名、フィールド名を分割
             t = target.split(".")
             if (t.length < 2) {
                 return this.rejected(new Error("Bad target."));
             }
-            if (i == 0) {
+            if (bucketName == null) {
                 bucketName = t[0];
             } else if (bucketName !== t[0]) {
                 return this.rejected(new Error("bucket names mismatch."));
@@ -85,6 +91,10 @@ export default class BaasDatasource {
             const fieldName = t.join(".");
             fieldNames.push(fieldName);
         }
+        if (bucketName == null) {
+            return this.resolved({data: []}) // no targets
+        }
+
 
         // URI for long query
         const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
