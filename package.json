@@ -1,6 +1,6 @@
 {
   "name": "baas-grafana-datasource",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Grafana DataSource plugin for NEC BaaS",
   "main": "index.js",
   "scripts": {

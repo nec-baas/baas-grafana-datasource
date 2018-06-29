@@ -74,25 +74,31 @@ describe('Datasource', () => {
                 resolve({
                     status: 200,
                     data: {
-                        results: []
+                        results: [
+                            {payload: {field1: 90.0, timestamp: "2018-01-01T00:00:00.000Z"}}
+                        ]
                     }
                 });
             });
         };
 
+        const target = "bucket1.payload.field1@payload.timestamp";
         const options = {
             range: {
                 from: "2018-01-01T00:00:00.000Z",
                 to: "2018-02-01T00:00:00.000Z"
             },
             targets: [{
-                target: "bucket1.field1@tsfield",
+                target: target
             }]
         };
 
         const promise = ds.query(options);
         promise.then((resp) => {
             assert.equal(resp.data.length, 1); // TBD
+            assert.equal(resp.data[0].target, target);
+            const datapoints = resp.data[0].datapoints;
+            assert.deepEqual(datapoints, [[90.0, 1514764800000]])
             done();
         });
     });

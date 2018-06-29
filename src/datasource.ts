@@ -72,8 +72,8 @@ export default class BaasDatasource {
             }
             tsFields.push(tsField);
 
-            t = target.split(".", 2);
-            if (t.length !== 2) {
+            t = target.split(".")
+            if (t.length < 2) {
                 return this.rejected(new Error("Bad target."));
             }
             if (i == 0) {
@@ -81,7 +81,8 @@ export default class BaasDatasource {
             } else if (bucketName !== t[0]) {
                 return this.rejected(new Error("bucket names mismatch."));
             }
-            const fieldName = t[1];
+            t.shift();
+            const fieldName = t.join(".");
             fieldNames.push(fieldName);
         }
 
