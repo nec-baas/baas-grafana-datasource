@@ -87,8 +87,11 @@ describe('Datasource', () => {
             ]
         };
 
-        const res = ds.convertResponse([{target: "t1"}, {target: "t2"}],
-            ["temperature", "payload.0.humidity"], response);
+        const res = ds.convertResponse(
+            [{target: "t1"}, {target: "t2"}],
+            ["temperature", "payload.0.humidity"],
+            [null, "createdAt"],
+            response);
 
         const results = res.data;
         assert.equal(results.length, 2);
