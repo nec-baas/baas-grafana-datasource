@@ -49,21 +49,30 @@ System.register([], function (exports_1, context_1) {
                     var bucketName = null;
                     var fieldNames = [];
                     var tsFields = [];
+                    var mainTsField = null;
                     for (var i = 0; i < query.targets.length; i++) {
                         // metric target: バケット名.field名
                         var target = query.targets[i].target;
+                        if (target == null) {
+                            continue;
+                        }
+                        // timestamp フィールド指定を取り出す
                         var tsField = null;
                         var t = target.split("@", 2);
                         if (t.length == 2) {
                             target = t[0];
                             tsField = t[1];
+                            if (mainTsField == null) {
+                                mainTsField = tsField;
+                            }
                         }
                         tsFields.push(tsField);
+                        // bucket名、フィールド名を分割
                         t = target.split(".");
                         if (t.length < 2) {
                             return this.rejected(new Error("Bad target."));
                         }
-                        if (i == 0) {
+                        if (bucketName == null) {
                             bucketName = t[0];
                         }
                         else if (bucketName !== t[0]) {
@@ -73,13 +82,22 @@ System.register([], function (exports_1, context_1) {
                         var fieldName = t.join(".");
                         fieldNames.push(fieldName);
                     }
+                    if (bucketName == null) {
+                        return this.resolved({ data: [] }); // no targets
+                    }
                     // URI for long query
                     var uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
+                    // 主タイムスタンプフィールド名
+                    if (mainTsField == null) {
+                        mainTsField = "createdAt";
+                    }
+                    // 検索条件
+                    var gte = {};
+                    gte[mainTsField] = { "$gte": options.range.from };
+                    var lte = {};
+                    lte[mainTsField] = { "$lte": options.range.to };
                     var where = {
-                        "$and": [
-                            { createdAt: { "$gte": options.range.from } },
-                            { createdAt: { "$lte": options.range.to } }
-                        ]
+                        "$and": [gte, lte]
                     };
                     var req = {
                         url: uri,
