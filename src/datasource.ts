@@ -1,3 +1,8 @@
+/// <reference path="./grafana-sdk.d.ts" />
+
+import {Datasource, QueryOptions, QueryResult, QueryResults} from "app/plugins/sdk";
+import * as Q from 'q';
+
 /**
  * Target spec
  */
@@ -35,7 +40,7 @@ export class TargetSpec {
 /**
  * BaaS Datasource
  */
-export class BaasDatasource {
+export class BaasDatasource implements Datasource {
     name: string;
     baseUri: string;
     tenantId: string;
@@ -85,7 +90,7 @@ export class BaasDatasource {
      * データ取得
      * @param options
      */
-    query(options: any) {
+    query(options: QueryOptions): Q.Promise<any> {
         this.log("query: " + JSON.stringify(options));
         const query = this.buildQueryParameters(options);
         query.targets = query.targets
@@ -137,24 +142,23 @@ export class BaasDatasource {
             });
     }
 
-    convertResponse(targets: TargetSpec[], data: any): any {
-        const results = [];
+    convertResponse(targets: TargetSpec[], data: any): QueryResults {
+        const results: QueryResult[] = [];
 
-        for (let i = 0; i < targets.length; i++) {
-            const key = targets[i].fieldName;
-            const tsField = targets[i].tsField;
+        for (let target of targets) {
+            const key = target.fieldName;
+            const tsField = target.tsField;
 
             // datapoints に変換
             const datapoints = [];
-            for (let j = 0; j < data.results.length; j++) {
-                const e = data.results[j];
+            for (let e of data.results) {
                 const value = this.extractValue(e, key);
                 const ts = this.extractTimestamp(e, tsField);
 
                 datapoints.push([value, ts.getTime()]);
             }
             results.push({
-                target: targets[i].target,
+                target: target.target,
                 datapoints: datapoints
             });
         }
@@ -170,8 +174,7 @@ export class BaasDatasource {
      */
     extractValue(obj: any, key: string): any {
         const keys = key.split('.');
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+        for (let key of keys) {
             obj = obj[key];
         }
         return obj;
@@ -188,8 +191,7 @@ export class BaasDatasource {
             return new Date(this.extractValue(obj, tsField));
         }
 
-        for (let i = 0; i < BaasDatasource.TimeStampFields.length; i++) {
-            const key = BaasDatasource.TimeStampFields[i];
+        for (let key of BaasDatasource.TimeStampFields) {
             if (key in obj) {
                 // 値は文字列(dateString)または Unix epoch millis
                 return new Date(obj[key]);
@@ -201,7 +203,7 @@ export class BaasDatasource {
     /**
      * Datasource接続テスト
      */
-    testDatasource() {
+    testDatasource(): Q.Promise<any> {
         this.log("testDatasource");
         return this.doRequest({
             url: this.baseUri + "/1/_health",
@@ -213,44 +215,44 @@ export class BaasDatasource {
         });
     }
 
-    annotationQuery(options: any) {
+    annotationQuery(options: any): Q.Promise<any> {
         // nop
+        return null;
     }
 
     /**
      * Metric検索。本 plugin では NOP。
      * @param options
      */
-    metricFindQuery(options: any) {
+    metricFindQuery(options: any): Q.Promise<any> {
         this.log("metricFindQuery");
         return this.resolved([]);
     }
 
-    private resolved(data: any): any {
+    private resolved(data: any): Q.Promise<any> {
         this.log("resolved");
-        const deferred = this.q.defer();
+        const deferred: Q.Deferred<any> = this.q.defer();
         deferred.resolve(data);
         return deferred.promise;
     }
 
-    private rejected(data: any): any {
+    private rejected(data: any): Q.Promise<any> {
         this.log("rejected");
-        const deferred = this.q.defer();
+        const deferred: Q.Deferred<any> = this.q.defer();
         deferred.reject(data);
         return deferred.promise;
     }
 
-    private doRequest(options: any): any {
+    private doRequest(options: any): Q.Promise<any> {
         this.log("doRequest");
         options.headers = this.headers;
         return this.backendSrv.datasourceRequest(options);
     }
 
-    private buildQueryParameters(options: any): any {
+    private buildQueryParameters(options: QueryOptions): any {
         const targets = [];
 
-        for (let i = 0; i < options.targets.length; i++) {
-            const target = options.targets[i];
+        for (let target of options.targets) {
             if (target.target === 'select metric') {
                 continue;
             }
@@ -265,3 +267,4 @@ export class BaasDatasource {
         return options;
     }
 }
+

@@ -17,6 +17,7 @@
   "devDependencies": {
     "@types/chai": "^4.1.4",
     "@types/mocha": "^5.2.3",
+    "@types/q": "^1.5.0",
     "chai": "^4.1.2",
     "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
     "gulp": "^3.9.1",
