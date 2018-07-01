@@ -69,8 +69,8 @@ describe('Datasource', () => {
 
     it('should query with one target', (done) => {
         const ds = createInstance();
-        ds.backendSrv.datasourceRequest = () => {
-            return new Promise((resolve, reject) => {
+        ds.backendSrv.datasourceRequest = sinon.fake.returns(
+            new Promise((resolve, reject) => {
                 resolve({
                     status: 200,
                     data: {
@@ -78,9 +78,9 @@ describe('Datasource', () => {
                             {payload: {field1: 90.0, timestamp: "2018-01-01T00:00:00.000Z"}}
                         ]
                     }
-                });
-            });
-        };
+                })
+            })
+        );
 
         const target = "bucket1.payload.field1@payload.timestamp";
         const options = {
