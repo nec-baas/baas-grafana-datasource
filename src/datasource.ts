@@ -1,6 +1,6 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
-import {Datasource, QueryOptions, QueryResult, QueryResults} from "app/plugins/sdk";
+import {Datasource, QueryOptions, TimeSerieQueryResult, QueryResults, MetricFindQueryResults} from "app/plugins/sdk";
 import * as Q from 'q';
 
 /**
@@ -150,7 +150,7 @@ export class BaasDatasource implements Datasource {
      * @return {module:app/plugins/sdk.QueryResults}
      */
     convertResponse(targets: TargetSpec[], data: any): QueryResults {
-        const results: QueryResult[] = [];
+        const results: TimeSerieQueryResult[] = [];
 
         for (let target of targets) {
             const key = target.fieldName;
@@ -238,9 +238,9 @@ export class BaasDatasource implements Datasource {
      * @param options
      * @return {Q.Promise<any>}
      */
-    metricFindQuery(options: any): Q.Promise<any> {
+    metricFindQuery(options: string): Q.Promise<MetricFindQueryResults> {
         this.log("metricFindQuery");
-        return this.resolved([]);
+        return this.q.when({ data: [] });
     }
 
     private resolved(data: any): Q.Promise<any> {

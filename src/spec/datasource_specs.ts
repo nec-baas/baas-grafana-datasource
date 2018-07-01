@@ -29,6 +29,9 @@ describe('Datasource', () => {
                 });
                 deferred.promise = promise;
                 return deferred;
+            },
+            when: (vl) => {
+                return Promise.resolve(vl);
             }
         }
     };

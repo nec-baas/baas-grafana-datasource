@@ -23,15 +23,17 @@ declare module 'app/plugins/sdk' {
         query(options: QueryOptions): Q.Promise<QueryResults>;
         testDatasource(): Q.Promise<any>;
         annotationQuery(options: any): Q.Promise<any>;
-        metricFindQuery(options: any): Q.Promise<any>;
+        metricFindQuery(options: string): Q.Promise<MetricFindQueryResults>;
     }
 
     // Datasource query options
     export interface QueryOptions {
-        scopedVars?: any;
         range?: QueryRange;
+        interval?: string;
         targets: QueryOptionsTarget[];
+        format?: string;
         maxDataPoints?: number;
+        scopedVars?: any;
     }
     export interface QueryRange {
         from: string;
@@ -46,10 +48,19 @@ declare module 'app/plugins/sdk' {
 
     // Datasource.query response
     export interface QueryResults {
-        data: QueryResult[];
+        data: TimeSerieQueryResult[];
     }
-    export interface QueryResult {
+    export interface TimeSerieQueryResult {
         target: string,
         datapoints: any[]; // array of [value, epoch]
+    }
+
+    // Datasource.metricFindQuery response
+    export interface MetricFindQueryResults {
+        data: Metric[];
+    }
+    export interface Metric {
+        text?: string;
+        value?: any;
     }
 }
