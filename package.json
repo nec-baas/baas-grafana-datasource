@@ -1,5 +1,5 @@
 {
-  "name": "baas-grafana-datasource",
+  "name": "nec-baas-grafana-datasource",
   "version": "0.0.3",
   "description": "Grafana DataSource plugin for NEC BaaS",
   "main": "index.js",
@@ -10,13 +10,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "http://git.local.antcloud.biz/gitbucket/git/antc/baas-grafana-datasource.git"
+    "url": "https://github.com/nec-baas/nec-baas-grafana-datasource.git"
   },
   "author": "NEC Corporation",
   "license": "Apache 2.0",
   "devDependencies": {
     "@types/chai": "^4.1.4",
     "@types/mocha": "^5.2.3",
+    "@types/q": "^1.5.0",
     "chai": "^4.1.2",
     "grafana-sdk-mocks": "github:grafana/grafana-sdk-mocks",
     "gulp": "^3.9.1",

@@ -1,4 +1,46 @@
-export default class BaasDatasource {
+/// <reference path="./grafana-sdk.d.ts" />
+
+import {Datasource, QueryOptions, QueryResult, QueryResults} from "app/plugins/sdk";
+import * as Q from 'q';
+
+/**
+ * Target spec
+ */
+export class TargetSpec {
+    /** target string */
+    target: string;
+    /** bucket name */
+    bucketName: string;
+    /** field name */
+    fieldName: string;
+    /** timestamp field name */
+    tsField: string;
+
+    constructor(target: string) {
+        this.target = target;
+
+        // Get timestamp field spec.
+        let t = target.split("@", 2);
+        if (t.length == 2) {
+            target = t[0];
+            this.tsField = t[1];
+        }
+
+        // Split bucket name and field spec.
+        t = target.split(".")
+        if (t.length < 2) {
+            throw new Error("Bad target.");
+        }
+        this.bucketName = t[0];
+        t.shift();
+        this.fieldName = t.join(".");
+    }
+}
+
+/**
+ * BaaS Datasource
+ */
+export class BaasDatasource implements Datasource {
     name: string;
     baseUri: string;
     tenantId: string;
@@ -8,7 +50,7 @@ export default class BaasDatasource {
     templateSrv: any;
     q: any;
 
-    // TimeStamp が格納されたフィールド名の候補
+    /** Candidates of time stamp field name */
     static TimeStampFields = ["createdAt", "updatedAt"];
 
     private log(msg: string) {
@@ -16,11 +58,11 @@ export default class BaasDatasource {
     }
 
     /**
-     * コンストラクタ
-     * @param instanceSettings 設定値。config.html で設定したもの。
-     * @param backendSrv Grafana の BackendSrv。
-     * @param $q Angular非同期サービス($q service)
-     * @param templateSrv Grafana の TemplateSrv。
+     * Constructor
+     * @param instanceSettings, configured by partials/config.html.
+     * @param backendSrv BackendSrv of Grafana.
+     * @param $q $q service of AngularJS 1.x.
+     * @param templateSrv TemplateSrv of Grafana.
      */
     /** @ngInject */
     constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
@@ -45,67 +87,33 @@ export default class BaasDatasource {
     }
 
     /**
-     * データ取得
-     * @param options
+     * Query metrics from data source.
+     * @param {module:app/plugins/sdk.QueryOptions} options
+     * @return {Q.Promise<QueryResults>} results
      */
-    query(options: any) {
+    query(options: QueryOptions): Q.Promise<QueryResults> {
         this.log("query: " + JSON.stringify(options));
         const query = this.buildQueryParameters(options);
-        query.targets = query.targets.filter(t => !t.hide);
+        query.targets = query.targets
+            .filter(t => !t.hide)
+            .filter(t => t.target != null);
 
         if (query.targets.length <= 0) {
             return this.resolved({data: []}) // no targets
         }
 
-        let bucketName: string = null;
-        const fieldNames: string[] = [];
-        const tsFields: string[] = [];
-        let mainTsField = null;
-
-        for (let i = 0; i < query.targets.length; i++) {
-            // metric target: バケット名.field名
-            let target = query.targets[i].target;
-            if (target == null) {
-                continue;
-            }
-
-            // timestamp フィールド指定を取り出す
-            let tsField = null;
-            let t = target.split("@", 2);
-            if (t.length == 2) {
-                target = t[0];
-                tsField = t[1];
-                if (mainTsField == null) {
-                    mainTsField = tsField;
-                }
-            }
-            tsFields.push(tsField);
-
-            // bucket名、フィールド名を分割
-            t = target.split(".")
-            if (t.length < 2) {
-                return this.rejected(new Error("Bad target."));
-            }
-            if (bucketName == null) {
-                bucketName = t[0];
-            } else if (bucketName !== t[0]) {
-                return this.rejected(new Error("bucket names mismatch."));
-            }
-            t.shift();
-            const fieldName = t.join(".");
-            fieldNames.push(fieldName);
+        let targets: TargetSpec[];
+        try {
+            targets = query.targets
+                .map(t => new TargetSpec(t.target));
+        } catch (e) {
+            return this.rejected(e);
         }
-        if (bucketName == null) {
-            return this.resolved({data: []}) // no targets
-        }
+        const mainTsField = targets[0].tsField || "createdAt";
+        const bucketName = targets[0].bucketName;
 
         // URI for long query
         const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
-
-        // 主タイムスタンプフィールド名
-        if (mainTsField == null) {
-            mainTsField = "createdAt";
-        }
 
         // 検索条件
         const gte = {};
@@ -131,28 +139,33 @@ export default class BaasDatasource {
                 const status = response.status;
                 const data = response.data;
 
-                return this.convertResponse(query.targets, fieldNames, tsFields, data);
+                return this.convertResponse(targets, data);
             });
     }
 
-    convertResponse(targets: any[], fieldNames: string[], tsFields: string[], data: any): any {
-        const results = [];
+    /**
+     * Convert http response of baas server to QueryResults.
+     * @param {TargetSpec[]} targets
+     * @param data response data
+     * @return {module:app/plugins/sdk.QueryResults}
+     */
+    convertResponse(targets: TargetSpec[], data: any): QueryResults {
+        const results: QueryResult[] = [];
 
-        for (let i = 0; i < targets.length; i++) {
-            const key = fieldNames[i];
-            const tsField = tsFields[i];
+        for (let target of targets) {
+            const key = target.fieldName;
+            const tsField = target.tsField;
 
-            // datapoints に変換
+            // convert to datapoint
             const datapoints = [];
-            for (let j = 0; j < data.results.length; j++) {
-                const e = data.results[j];
+            for (let e of data.results) {
                 const value = this.extractValue(e, key);
                 const ts = this.extractTimestamp(e, tsField);
 
                 datapoints.push([value, ts.getTime()]);
             }
             results.push({
-                target: targets[i].target,
+                target: target.target,
                 datapoints: datapoints
             });
         }
@@ -161,33 +174,31 @@ export default class BaasDatasource {
     }
 
     /**
-     * JSON から特定フィールドの値を取得する
+     * Extract value of specified filed from JSON.
      * @param obj JSON Object
-     * @param {string} key フィールド指定
-     * @returns {any} 値
+     * @param {string} key field name, separated with period.
+     * @returns {any} value
      */
     extractValue(obj: any, key: string): any {
         const keys = key.split('.');
-        for (let i = 0; i < keys.length; i++) {
-            const key = keys[i];
+        for (let key of keys) {
             obj = obj[key];
         }
         return obj;
     }
 
     /**
-     * JSON からタイムスタンプ値を取り出す
+     * Extract timestamp value from JSON.
      * @param obj JSON Object
-     * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
-     * @returns {Date} タイムスタンプ
+     * @param {string} tsField time stamp field name, null for auto inference.
+     * @returns {Date} timestamp
      */
     extractTimestamp(obj: any, tsField: string): Date {
         if (tsField != null) {
             return new Date(this.extractValue(obj, tsField));
         }
 
-        for (let i = 0; i < BaasDatasource.TimeStampFields.length; i++) {
-            const key = BaasDatasource.TimeStampFields[i];
+        for (let key of BaasDatasource.TimeStampFields) {
             if (key in obj) {
                 // 値は文字列(dateString)または Unix epoch millis
                 return new Date(obj[key]);
@@ -197,9 +208,10 @@ export default class BaasDatasource {
     }
 
     /**
-     * Datasource接続テスト
+     * Test datasource connection.
+     * note: no authentication is tested.
      */
-    testDatasource() {
+    testDatasource(): Q.Promise<any> {
         this.log("testDatasource");
         return this.doRequest({
             url: this.baseUri + "/1/_health",
@@ -211,44 +223,50 @@ export default class BaasDatasource {
         });
     }
 
-    annotationQuery(options: any) {
+    /**
+     * Annotation query. Not supported.
+     * @param options
+     * @return {Q.Promise<any>}
+     */
+    annotationQuery(options: any): Q.Promise<any> {
         // nop
+        return null;
     }
 
     /**
-     * Metric検索。本 plugin では NOP。
+     * Metric find query. Not implemented.
      * @param options
+     * @return {Q.Promise<any>}
      */
-    metricFindQuery(options: any) {
+    metricFindQuery(options: any): Q.Promise<any> {
         this.log("metricFindQuery");
         return this.resolved([]);
     }
 
-    private resolved(data: any): any {
+    private resolved(data: any): Q.Promise<any> {
         this.log("resolved");
-        const deferred = this.q.defer();
+        const deferred: Q.Deferred<any> = this.q.defer();
         deferred.resolve(data);
         return deferred.promise;
     }
 
-    private rejected(data: any): any {
+    private rejected(data: any): Q.Promise<any> {
         this.log("rejected");
-        const deferred = this.q.defer();
+        const deferred: Q.Deferred<any> = this.q.defer();
         deferred.reject(data);
         return deferred.promise;
     }
 
-    private doRequest(options: any): any {
+    private doRequest(options: any): Q.Promise<any> {
         this.log("doRequest");
         options.headers = this.headers;
         return this.backendSrv.datasourceRequest(options);
     }
 
-    private buildQueryParameters(options: any): any {
+    private buildQueryParameters(options: QueryOptions): any {
         const targets = [];
 
-        for (let i = 0; i < options.targets.length; i++) {
-            const target = options.targets[i];
+        for (let target of options.targets) {
             if (target.target === 'select metric') {
                 continue;
             }
@@ -263,3 +281,4 @@ export default class BaasDatasource {
         return options;
     }
 }
+

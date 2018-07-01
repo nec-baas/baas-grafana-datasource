@@ -4,7 +4,7 @@ import {describe, it} from "mocha";
 import {assert, expect} from "chai";
 import * as sinon from "sinon";
 
-import BaasDatasource from "../datasource";
+import {BaasDatasource, TargetSpec} from "../datasource";
 
 describe('Datasource', () => {
     const createInstanceSettings = () => {
@@ -69,8 +69,8 @@ describe('Datasource', () => {
 
     it('should query with one target', (done) => {
         const ds = createInstance();
-        ds.backendSrv.datasourceRequest = () => {
-            return new Promise((resolve, reject) => {
+        ds.backendSrv.datasourceRequest = sinon.fake.returns(
+            new Promise((resolve, reject) => {
                 resolve({
                     status: 200,
                     data: {
@@ -78,9 +78,9 @@ describe('Datasource', () => {
                             {payload: {field1: 90.0, timestamp: "2018-01-01T00:00:00.000Z"}}
                         ]
                     }
-                });
-            });
-        };
+                })
+            })
+        );
 
         const target = "bucket1.payload.field1@payload.timestamp";
         const options = {
@@ -125,21 +125,25 @@ describe('Datasource', () => {
             ]
         };
 
+        const t1 = "b1.temperature";
+        const t2 = "b1.payload.0.humidity@createdAt";
+
         const res = ds.convertResponse(
-            [{target: "t1"}, {target: "t2"}],
-            ["temperature", "payload.0.humidity"],
-            [null, "createdAt"],
+            [
+                new TargetSpec(t1),
+                new TargetSpec(t2)
+            ],
             response);
 
         const results = res.data;
         assert.equal(results.length, 2);
 
         const temperature = results[0];
-        assert.equal(temperature.target, "t1");
+        assert.equal(temperature.target, t1);
         assert.deepEqual(temperature.datapoints, [[20, 1514764800000], [21, 1514764800001]]);
 
         const humidity = results[1];
-        assert.equal(humidity.target, "t2");
+        assert.equal(humidity.target, t2);
         assert.deepEqual(humidity.datapoints, [[60, 1514764800000], [61, 1514764800001]]);
     });
 });
