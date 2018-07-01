@@ -1,23 +1,24 @@
 {
-  "name": "NEC BaaS",
-  "id": "necbaas-datasource",
   "type": "datasource",
+  "name": "NEC BaaS",
+  "id": "nec-baas-grafana-datasource",
 
   "metrics": true,
   "annotations": false,
 
   "info": {
-    "description": "NEC BaaS datasource",
+    "description": "NEC BaaS JSON object storage datasource for grafana",
     "author": {
       "name": "NEC Corporation",
       "url": ""
     },
+    "keywords": ["datasource", "baas"],
     "version": "0.0.3",
     "updated": "2018-06-29"
   },
 
   "dependencies": {
-    "grafanaVersion": "5.x.x",
+    "grafanaVersion": "3.x 4.x 5.x",
     "plugins": []
   }
 }

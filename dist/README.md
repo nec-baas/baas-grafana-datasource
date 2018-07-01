@@ -26,8 +26,8 @@ Grafana の設定画面から "NEC BaaS" データソースを追加してくだ
 ユーザ認証が必要な場合は、Basic Auth を指定して User/Password を入力してください。
 なお、Basic Auth を使用するためには、BaaS Server v7.5.0 beta3 以上が必要です。
 
-Dashboard
-----------
+Dashboard / クエリ条件
+-----------------------
 
 Dashboardを作成し、Data Source に上記で作成したデータソースを指定してください。
 
@@ -59,4 +59,8 @@ JSON の深い階層のデータを取得する場合は、fieldName にキー�
     bucket1.payload.0.temperature@payload.0.timestamp
 
 なお、日付文字列は JavaScript の Date.parse() でパースできるフォーマットでなければなりません。
+
+さらに、日時範囲指定でクエリを行う場合、日時は ISO 8601 形式、具体的には "YYYY-MM-DDTHH:MM:SS.sssZ" で
+なければなりません。これは Grafana が指定する日時範囲が ISO 8601 形式の文字列での指定となっており、
+本プラグインはこれをそのまま MongoDB の検索式 ($gte および $lte) にマップするためです。
 

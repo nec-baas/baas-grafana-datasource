@@ -15,7 +15,7 @@ System.register(["./datasource", "./query_ctrl", "./config_ctrl"], function (exp
             }
         ],
         execute: function () {
-            exports_1("Datasource", datasource_1.default);
+            exports_1("Datasource", datasource_1.BaasDatasource);
             exports_1("QueryCtrl", query_ctrl_1.BaasDatasourceQueryCtrl);
             exports_1("ConfigCtrl", config_ctrl_1.BaasConfigCtrl);
             BaasQueryOptionsCtrl = /** @class */ (function () {

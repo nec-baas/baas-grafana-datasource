@@ -1,4 +1,4 @@
-import BaasDatasource from "./datasource";
+import { BaasDatasource } from "./datasource";
 import { BaasDatasourceQueryCtrl } from "./query_ctrl";
 import { BaasConfigCtrl } from "./config_ctrl";
 declare class BaasQueryOptionsCtrl {

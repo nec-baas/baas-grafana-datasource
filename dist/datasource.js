@@ -1,17 +1,42 @@
+/// <reference path="./grafana-sdk.d.ts" />
 System.register([], function (exports_1, context_1) {
     "use strict";
-    var BaasDatasource;
+    var TargetSpec, BaasDatasource;
     var __moduleName = context_1 && context_1.id;
     return {
         setters: [],
-        execute: function () {
+        execute: function () {/// <reference path="./grafana-sdk.d.ts" />
+            /**
+             * Target spec
+             */
+            TargetSpec = /** @class */ (function () {
+                function TargetSpec(target) {
+                    this.target = target;
+                    // Get timestamp field spec.
+                    var t = target.split("@", 2);
+                    if (t.length == 2) {
+                        target = t[0];
+                        this.tsField = t[1];
+                    }
+                    // Split bucket name and field spec.
+                    t = target.split(".");
+                    if (t.length < 2) {
+                        throw new Error("Bad target.");
+                    }
+                    this.bucketName = t[0];
+                    t.shift();
+                    this.fieldName = t.join(".");
+                }
+                return TargetSpec;
+            }());
+            exports_1("TargetSpec", TargetSpec);
             BaasDatasource = /** @class */ (function () {
                 /**
-                 * コンストラクタ
-                 * @param instanceSettings 設定値。config.html で設定したもの。
-                 * @param backendSrv Grafana の BackendSrv。
-                 * @param $q Angular非同期サービス($q service)
-                 * @param templateSrv Grafana の TemplateSrv。
+                 * Constructor
+                 * @param instanceSettings, configured by partials/config.html.
+                 * @param backendSrv BackendSrv of Grafana.
+                 * @param $q $q service of AngularJS 1.x.
+                 * @param templateSrv TemplateSrv of Grafana.
                  */
                 /** @ngInject */
                 function BaasDatasource(instanceSettings, backendSrv, $q, templateSrv) {
@@ -35,62 +60,32 @@ System.register([], function (exports_1, context_1) {
                     //console.log(msg);
                 };
                 /**
-                 * データ取得
-                 * @param options
+                 * Query metrics from data source.
+                 * @param {module:app/plugins/sdk.QueryOptions} options
+                 * @return {Q.Promise<QueryResults>} results
                  */
                 BaasDatasource.prototype.query = function (options) {
                     var _this = this;
                     this.log("query: " + JSON.stringify(options));
                     var query = this.buildQueryParameters(options);
-                    query.targets = query.targets.filter(function (t) { return !t.hide; });
+                    query.targets = query.targets
+                        .filter(function (t) { return !t.hide; })
+                        .filter(function (t) { return t.target != null; });
                     if (query.targets.length <= 0) {
                         return this.resolved({ data: [] }); // no targets
                     }
-                    var bucketName = null;
-                    var fieldNames = [];
-                    var tsFields = [];
-                    var mainTsField = null;
-                    for (var i = 0; i < query.targets.length; i++) {
-                        // metric target: バケット名.field名
-                        var target = query.targets[i].target;
-                        if (target == null) {
-                            continue;
-                        }
-                        // timestamp フィールド指定を取り出す
-                        var tsField = null;
-                        var t = target.split("@", 2);
-                        if (t.length == 2) {
-                            target = t[0];
-                            tsField = t[1];
-                            if (mainTsField == null) {
-                                mainTsField = tsField;
-                            }
-                        }
-                        tsFields.push(tsField);
-                        // bucket名、フィールド名を分割
-                        t = target.split(".");
-                        if (t.length < 2) {
-                            return this.rejected(new Error("Bad target."));
-                        }
-                        if (bucketName == null) {
-                            bucketName = t[0];
-                        }
-                        else if (bucketName !== t[0]) {
-                            return this.rejected(new Error("bucket names mismatch."));
-                        }
-                        t.shift();
-                        var fieldName = t.join(".");
-                        fieldNames.push(fieldName);
+                    var targets;
+                    try {
+                        targets = query.targets
+                            .map(function (t) { return new TargetSpec(t.target); });
                     }
-                    if (bucketName == null) {
-                        return this.resolved({ data: [] }); // no targets
+                    catch (e) {
+                        return this.rejected(e);
                     }
+                    var mainTsField = targets[0].tsField || "createdAt";
+                    var bucketName = targets[0].bucketName;
                     // URI for long query
                     var uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
-                    // 主タイムスタンプフィールド名
-                    if (mainTsField == null) {
-                        mainTsField = "createdAt";
-                    }
                     // 検索条件
                     var gte = {};
                     gte[mainTsField] = { "$gte": options.range.from };
@@ -112,55 +107,62 @@ System.register([], function (exports_1, context_1) {
                         .then(function (response) {
                         var status = response.status;
                         var data = response.data;
-                        return _this.convertResponse(query.targets, fieldNames, tsFields, data);
+                        return _this.convertResponse(targets, data);
                     });
                 };
-                BaasDatasource.prototype.convertResponse = function (targets, fieldNames, tsFields, data) {
+                /**
+                 * Convert http response of baas server to QueryResults.
+                 * @param {TargetSpec[]} targets
+                 * @param data response data
+                 * @return {module:app/plugins/sdk.QueryResults}
+                 */
+                BaasDatasource.prototype.convertResponse = function (targets, data) {
                     var results = [];
-                    for (var i = 0; i < targets.length; i++) {
-                        var key = fieldNames[i];
-                        var tsField = tsFields[i];
-                        // datapoints に変換
+                    for (var _i = 0, targets_1 = targets; _i < targets_1.length; _i++) {
+                        var target = targets_1[_i];
+                        var key = target.fieldName;
+                        var tsField = target.tsField;
+                        // convert to datapoint
                         var datapoints = [];
-                        for (var j = 0; j < data.results.length; j++) {
-                            var e = data.results[j];
+                        for (var _a = 0, _b = data.results; _a < _b.length; _a++) {
+                            var e = _b[_a];
                             var value = this.extractValue(e, key);
                             var ts = this.extractTimestamp(e, tsField);
                             datapoints.push([value, ts.getTime()]);
                         }
                         results.push({
-                            target: targets[i].target,
+                            target: target.target,
                             datapoints: datapoints
                         });
                     }
                     return { "data": results };
                 };
                 /**
-                 * JSON から特定フィールドの値を取得する
+                 * Extract value of specified filed from JSON.
                  * @param obj JSON Object
-                 * @param {string} key フィールド指定
-                 * @returns {any} 値
+                 * @param {string} key field name, separated with period.
+                 * @returns {any} value
                  */
                 BaasDatasource.prototype.extractValue = function (obj, key) {
                     var keys = key.split('.');
-                    for (var i = 0; i < keys.length; i++) {
-                        var key_1 = keys[i];
+                    for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
+                        var key_1 = keys_1[_i];
                         obj = obj[key_1];
                     }
                     return obj;
                 };
                 /**
-                 * JSON からタイムスタンプ値を取り出す
+                 * Extract timestamp value from JSON.
                  * @param obj JSON Object
-                 * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
-                 * @returns {Date} タイムスタンプ
+                 * @param {string} tsField time stamp field name, null for auto inference.
+                 * @returns {Date} timestamp
                  */
                 BaasDatasource.prototype.extractTimestamp = function (obj, tsField) {
                     if (tsField != null) {
                         return new Date(this.extractValue(obj, tsField));
                     }
-                    for (var i = 0; i < BaasDatasource.TimeStampFields.length; i++) {
-                        var key = BaasDatasource.TimeStampFields[i];
+                    for (var _i = 0, _a = BaasDatasource.TimeStampFields; _i < _a.length; _i++) {
+                        var key = _a[_i];
                         if (key in obj) {
                             // 値は文字列(dateString)または Unix epoch millis
                             return new Date(obj[key]);
@@ -169,7 +171,8 @@ System.register([], function (exports_1, context_1) {
                     return null;
                 };
                 /**
-                 * Datasource接続テスト
+                 * Test datasource connection.
+                 * note: no authentication is tested.
                  */
                 BaasDatasource.prototype.testDatasource = function () {
                     this.log("testDatasource");
@@ -182,12 +185,19 @@ System.register([], function (exports_1, context_1) {
                         }
                     });
                 };
+                /**
+                 * Annotation query. Not supported.
+                 * @param options
+                 * @return {Q.Promise<any>}
+                 */
                 BaasDatasource.prototype.annotationQuery = function (options) {
                     // nop
+                    return null;
                 };
                 /**
-                 * Metric検索。本 plugin では NOP。
+                 * Metric find query. Not implemented.
                  * @param options
+                 * @return {Q.Promise<any>}
                  */
                 BaasDatasource.prototype.metricFindQuery = function (options) {
                     this.log("metricFindQuery");
@@ -212,8 +222,8 @@ System.register([], function (exports_1, context_1) {
                 };
                 BaasDatasource.prototype.buildQueryParameters = function (options) {
                     var targets = [];
-                    for (var i = 0; i < options.targets.length; i++) {
-                        var target = options.targets[i];
+                    for (var _i = 0, _a = options.targets; _i < _a.length; _i++) {
+                        var target = _a[_i];
                         if (target.target === 'select metric') {
                             continue;
                         }
@@ -227,11 +237,11 @@ System.register([], function (exports_1, context_1) {
                     options.targets = targets;
                     return options;
                 };
-                // TimeStamp が格納されたフィールド名の候補
+                /** Candidates of time stamp field name */
                 BaasDatasource.TimeStampFields = ["createdAt", "updatedAt"];
                 return BaasDatasource;
             }());
-            exports_1("default", BaasDatasource);
+            exports_1("BaasDatasource", BaasDatasource);
         }
     };
 });
