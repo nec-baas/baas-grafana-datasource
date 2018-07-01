@@ -19,14 +19,14 @@ export class TargetSpec {
     constructor(target: string) {
         this.target = target;
 
-        // timestamp フィールド指定を取り出す
+        // Get timestamp field spec.
         let t = target.split("@", 2);
         if (t.length == 2) {
             target = t[0];
             this.tsField = t[1];
         }
 
-        // bucket名、フィールド名を分割
+        // Split bucket name and field spec.
         t = target.split(".")
         if (t.length < 2) {
             throw new Error("Bad target.");
@@ -50,7 +50,7 @@ export class BaasDatasource implements Datasource {
     templateSrv: any;
     q: any;
 
-    // TimeStamp が格納されたフィールド名の候補
+    /** Candidates of time stamp field name */
     static TimeStampFields = ["createdAt", "updatedAt"];
 
     private log(msg: string) {
@@ -58,11 +58,11 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * コンストラクタ
-     * @param instanceSettings 設定値。config.html で設定したもの。
-     * @param backendSrv Grafana の BackendSrv。
-     * @param $q Angular非同期サービス($q service)
-     * @param templateSrv Grafana の TemplateSrv。
+     * Constructor
+     * @param instanceSettings, configured by partials/config.html.
+     * @param backendSrv BackendSrv of Grafana.
+     * @param $q $q service of AngularJS 1.x.
+     * @param templateSrv TemplateSrv of Grafana.
      */
     /** @ngInject */
     constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
@@ -87,10 +87,11 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * データ取得
-     * @param options
+     * Query metrics from data source.
+     * @param {module:app/plugins/sdk.QueryOptions} options
+     * @return {Q.Promise<QueryResults>} results
      */
-    query(options: QueryOptions): Q.Promise<any> {
+    query(options: QueryOptions): Q.Promise<QueryResults> {
         this.log("query: " + JSON.stringify(options));
         const query = this.buildQueryParameters(options);
         query.targets = query.targets
@@ -142,6 +143,12 @@ export class BaasDatasource implements Datasource {
             });
     }
 
+    /**
+     * Convert http response of baas server to QueryResults.
+     * @param {TargetSpec[]} targets
+     * @param data response data
+     * @return {module:app/plugins/sdk.QueryResults}
+     */
     convertResponse(targets: TargetSpec[], data: any): QueryResults {
         const results: QueryResult[] = [];
 
@@ -149,7 +156,7 @@ export class BaasDatasource implements Datasource {
             const key = target.fieldName;
             const tsField = target.tsField;
 
-            // datapoints に変換
+            // convert to datapoint
             const datapoints = [];
             for (let e of data.results) {
                 const value = this.extractValue(e, key);
@@ -167,10 +174,10 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * JSON から特定フィールドの値を取得する
+     * Extract value of specified filed from JSON.
      * @param obj JSON Object
-     * @param {string} key フィールド指定
-     * @returns {any} 値
+     * @param {string} key field name, separated with period.
+     * @returns {any} value
      */
     extractValue(obj: any, key: string): any {
         const keys = key.split('.');
@@ -181,10 +188,10 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * JSON からタイムスタンプ値を取り出す
+     * Extract timestamp value from JSON.
      * @param obj JSON Object
-     * @param {string} tsField タイムスタンプフィールド名。null は自動推定。
-     * @returns {Date} タイムスタンプ
+     * @param {string} tsField time stamp field name, null for auto inference.
+     * @returns {Date} timestamp
      */
     extractTimestamp(obj: any, tsField: string): Date {
         if (tsField != null) {
@@ -201,7 +208,8 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * Datasource接続テスト
+     * Test datasource connection.
+     * note: no authentication is tested.
      */
     testDatasource(): Q.Promise<any> {
         this.log("testDatasource");
@@ -215,14 +223,20 @@ export class BaasDatasource implements Datasource {
         });
     }
 
+    /**
+     * Annotation query. Not supported.
+     * @param options
+     * @return {Q.Promise<any>}
+     */
     annotationQuery(options: any): Q.Promise<any> {
         // nop
         return null;
     }
 
     /**
-     * Metric検索。本 plugin では NOP。
+     * Metric find query. Not implemented.
      * @param options
+     * @return {Q.Promise<any>}
      */
     metricFindQuery(options: any): Q.Promise<any> {
         this.log("metricFindQuery");
