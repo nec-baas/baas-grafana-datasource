@@ -51,7 +51,7 @@ export class BaasDatasource implements Datasource {
     q: any;
 
     /** Candidates of time stamp field name */
-    static TimeStampFields = ["createdAt", "updatedAt"];
+    static TimeStampFields = ["updatedAt", "createdAt"];
 
     private log(msg: string) {
         //console.log(msg);
@@ -109,7 +109,7 @@ export class BaasDatasource implements Datasource {
         } catch (e) {
             return this.rejected(e);
         }
-        const mainTsField = targets[0].tsField || "createdAt";
+        const mainTsField = targets[0].tsField || "updatedAt";
         const bucketName = targets[0].bucketName;
 
         // URI for long query
@@ -129,7 +129,7 @@ export class BaasDatasource implements Datasource {
             url: uri,
             data: {
                 where: where,
-                order: "createdAt",
+                order: "updatedAt",
                 limit: options.maxDataPoints
             },
             method: "POST"
