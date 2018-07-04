@@ -82,7 +82,7 @@ System.register([], function (exports_1, context_1) {
                     catch (e) {
                         return this.rejected(e);
                     }
-                    var mainTsField = targets[0].tsField || "createdAt";
+                    var mainTsField = targets[0].tsField || "updatedAt";
                     var bucketName = targets[0].bucketName;
                     // URI for long query
                     var uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
@@ -98,7 +98,7 @@ System.register([], function (exports_1, context_1) {
                         url: uri,
                         data: {
                             where: where,
-                            order: "createdAt",
+                            order: "updatedAt",
                             limit: options.maxDataPoints
                         },
                         method: "POST"
@@ -238,7 +238,7 @@ System.register([], function (exports_1, context_1) {
                     return options;
                 };
                 /** Candidates of time stamp field name */
-                BaasDatasource.TimeStampFields = ["createdAt", "updatedAt"];
+                BaasDatasource.TimeStampFields = ["updatedAt", "createdAt"];
                 return BaasDatasource;
             }());
             exports_1("BaasDatasource", BaasDatasource);
