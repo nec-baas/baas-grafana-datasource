@@ -3,6 +3,7 @@
 declare module 'app/plugins/sdk' {
     import * as Q from 'q';
 
+    // app/features/panel/query_ctrl.ts
     export class QueryCtrl {
         constructor($scope: any, $injector: any);
 
