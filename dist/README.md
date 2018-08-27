@@ -4,7 +4,8 @@ NEC BaaS datasource plugin for Grafana
 概要
 ----
 
-Grafana から BaaS に REST API でアクセスしてデータを取得するための  Datasource plugin です。
+Grafana から NEC モバイルバックエンド基盤(NEC BaaS) に REST API でアクセスして
+データを取得するための  Datasource plugin です。
 
 インストール
 ------------

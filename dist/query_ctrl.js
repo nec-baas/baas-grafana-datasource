@@ -2,9 +2,12 @@
 System.register(["app/plugins/sdk"], function (exports_1, context_1) {
     "use strict";
     var __extends = (this && this.__extends) || (function () {
-        var extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        var extendStatics = function (d, b) {
+            extendStatics = Object.setPrototypeOf ||
+                ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+                function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+            return extendStatics(d, b);
+        }
         return function (d, b) {
             extendStatics(d, b);
             function __() { this.constructor = d; }
@@ -23,7 +26,11 @@ System.register(["app/plugins/sdk"], function (exports_1, context_1) {
             BaasDatasourceQueryCtrl = /** @class */ (function (_super) {
                 __extends(BaasDatasourceQueryCtrl, _super);
                 function BaasDatasourceQueryCtrl($scope, $injector) {
-                    return _super.call(this, $scope, $injector) || this;
+                    var _this = _super.call(this, $scope, $injector) || this;
+                    _this.scope = $scope;
+                    _this.target.target = _this.target.target || 'select metric';
+                    _this.target.type = 'timeserie';
+                    return _this;
                 }
                 BaasDatasourceQueryCtrl.prototype.getOptions = function (query) {
                     return this.datasource.metricFindQuery('');

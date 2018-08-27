@@ -201,7 +201,7 @@ System.register([], function (exports_1, context_1) {
                  */
                 BaasDatasource.prototype.metricFindQuery = function (options) {
                     this.log("metricFindQuery");
-                    return this.resolved([]);
+                    return this.q.when({ data: [] });
                 };
                 BaasDatasource.prototype.resolved = function (data) {
                     this.log("resolved");

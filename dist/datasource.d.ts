@@ -1,5 +1,5 @@
 /// <reference path="grafana-sdk.d.ts" />
-import { Datasource, QueryOptions, QueryResults } from "app/plugins/sdk";
+import { Datasource, QueryOptions, QueryResults, MetricFindQueryResults } from "app/plugins/sdk";
 import * as Q from 'q';
 /**
  * Target spec
@@ -81,7 +81,7 @@ export declare class BaasDatasource implements Datasource {
      * @param options
      * @return {Q.Promise<any>}
      */
-    metricFindQuery(options: any): Q.Promise<any>;
+    metricFindQuery(options: string): Q.Promise<MetricFindQueryResults>;
     private resolved;
     private rejected;
     private doRequest;
