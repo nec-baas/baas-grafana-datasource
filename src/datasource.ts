@@ -21,8 +21,11 @@ export class TargetSpec {
     /** field name */
     fieldName: string;
 
+    /** aggregation */
+    aggr: any;
+
     /** query(where) */
-    where: object;
+    where: any;
 
     /** timestamp field name */
     tsField: string;
@@ -30,11 +33,12 @@ export class TargetSpec {
     constructor(target: string) {
         this.target = target;
 
-        // regexp: matches "target?where@ts"
-        const res = target.match(/^(.*?)(?:\?(.*?))?(?:@(.*))?$/);
+        // regexp: matches "target%aggr?where@ts"
+        const res = target.match(/^(.*?)(?:%(.*?))?(?:\?(.*?))?(?:@(.*))?$/);
         target = res[1];
-        this.where = parseJson(res[2]);
-        this.tsField = res[3];
+        this.aggr = parseJson(res[2]);
+        this.where = parseJson(res[3]);
+        this.tsField = res[4];
 
         // Split bucket name and field spec.
         let t = target.split(".");
@@ -119,12 +123,12 @@ export class BaasDatasource implements Datasource {
         } catch (e) {
             return this.rejected(e);
         }
-        const mainTsField = targets[0].tsField || "updatedAt";
-        const bucketName = targets[0].bucketName;
-        const where = targets[0].where;
 
-        // URI for long query
-        const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
+        // get parameters from head of targets
+        const bucketName = targets[0].bucketName;
+        const aggr = targets[0].aggr;
+        const where = targets[0].where;
+        const mainTsField = targets[0].tsField || "updatedAt";
 
         // 検索条件
         const gte = {};
@@ -132,20 +136,33 @@ export class BaasDatasource implements Datasource {
         const lte = {};
         lte[mainTsField] = {"$lte": options.range.to};
 
-        const whereAnd = [ gte, lte ];
+        const whereAnd = [gte, lte];
         if (where != null) {
             whereAnd.push(where);
         }
 
-        const req = {
-            url: uri,
-            data: {
-                where: { "$and": whereAnd },
-                order: "updatedAt",
-                limit: options.maxDataPoints
-            },
-            method: "POST"
-        };
+        let req: object;
+        if (aggr == null) {
+            // long query API
+            req = {
+                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query",
+                data: {
+                    where: {"$and": whereAnd},
+                    order: "updatedAt",
+                    limit: options.maxDataPoints
+                },
+                method: "POST"
+            };
+        } else {
+            // aggregation API
+            const pipeline: [any] = aggr.pipeline;
+            pipeline.unshift({"$match": {"$and": whereAnd }});
+            req = {
+                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_aggregate",
+                data: aggr,
+                method: "POST"
+            };
+        }
         return this.doRequest(req)
             .then(response => {
                 const status = response.status;
