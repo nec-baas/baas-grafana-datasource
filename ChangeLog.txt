@@ -1,3 +1,7 @@
+2018-XX-XX:
+
+    * 改善: MongoDBクエリ条件指定を追加
+
 2018-07-04: ver 0.0.4
 
     * 改善: デフォルトの TimeStamp フィールドを createdAt ⇒ updatedAt に変更

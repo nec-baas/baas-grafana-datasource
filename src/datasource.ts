@@ -3,31 +3,41 @@
 import {Datasource, QueryOptions, TimeSerieQueryResult, QueryResults, MetricFindQueryResults} from "app/plugins/sdk";
 import * as Q from 'q';
 
+function parseJson(json: string): object {
+    if (json == null) return null;
+    return JSON.parse(json);
+}
+
 /**
  * Target spec
  */
 export class TargetSpec {
     /** target string */
     target: string;
+
     /** bucket name */
     bucketName: string;
+
     /** field name */
     fieldName: string;
+
+    /** query(where) */
+    where: object;
+
     /** timestamp field name */
     tsField: string;
 
     constructor(target: string) {
         this.target = target;
 
-        // Get timestamp field spec.
-        let t = target.split("@", 2);
-        if (t.length == 2) {
-            target = t[0];
-            this.tsField = t[1];
-        }
+        // regexp: matches "target?where@ts"
+        const res = target.match(/^(.*?)(?:\?(.*?))?(?:@(.*))?$/);
+        target = res[1];
+        this.where = parseJson(res[2]);
+        this.tsField = res[3];
 
         // Split bucket name and field spec.
-        t = target.split(".")
+        let t = target.split(".");
         if (t.length < 2) {
             throw new Error("Bad target.");
         }
@@ -111,6 +121,7 @@ export class BaasDatasource implements Datasource {
         }
         const mainTsField = targets[0].tsField || "updatedAt";
         const bucketName = targets[0].bucketName;
+        const where = targets[0].where;
 
         // URI for long query
         const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
@@ -119,16 +130,17 @@ export class BaasDatasource implements Datasource {
         const gte = {};
         gte[mainTsField] = {"$gte": options.range.from};
         const lte = {};
-        lte[mainTsField] = {"$lte": options.range.to}
+        lte[mainTsField] = {"$lte": options.range.to};
 
-        const where = {
-            "$and": [ gte, lte ]
-        };
+        const whereAnd = [ gte, lte ];
+        if (where != null) {
+            whereAnd.push(where);
+        }
 
         const req = {
             url: uri,
             data: {
-                where: where,
+                where: { "$and": whereAnd },
                 order: "updatedAt",
                 limit: options.maxDataPoints
             },
