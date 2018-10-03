@@ -27,12 +27,12 @@ Grafana の設定画面から "NEC BaaS" データソースを追加してくだ
 ユーザ認証が必要な場合は、Basic Auth を指定して User/Password を入力してください。
 なお、Basic Auth を使用するためには、BaaS Server v7.5.0 beta3 以上が必要です。
 
-Dashboard / クエリ条件
------------------------
+Dashboard / クエリ条件(Target)
+-------------------------------
 
 Dashboardを作成し、Data Source に上記で作成したデータソースを指定してください。
 
-クエリ条件は以下のように指定してください。
+クエリ条件(target)は以下のように指定してください。
 
     bucketName.fieldName
 
@@ -59,6 +59,16 @@ JSON の深い階層のデータを取得する場合は、fieldName にキー�
 各オプションを組み合わせて指定できますが、指定順序は説明順序どおりでなければなりません。
 
 複数のクエリ条件を指定した場合には、先頭のクエリ条件のオプションのみが使用されます。
+
+### MongoDB Aggregation
+
+MongoDB の Aggregation を指定することができます。
+クエリ式は、"%" と Aggregation JSON 文字列で指定してください。
+pipeline の指定は必須です。
+
+以下に例を示します。
+
+    bucket1.temperature%{"pipeline": [(中略)]}
 
 ### MongoDB クエリ式指定
 
