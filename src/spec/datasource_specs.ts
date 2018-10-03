@@ -4,7 +4,8 @@ import {describe, it} from "mocha";
 import {assert, expect} from "chai";
 import * as sinon from "sinon";
 
-import {BaasDatasource, TargetSpec} from "../datasource";
+import {BaasDatasource} from "../datasource";
+import {TargetSpec} from "../target_spec";
 
 describe('Datasource', () => {
     const createInstanceSettings = () => {
