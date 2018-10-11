@@ -13,7 +13,7 @@
     "url": "https://github.com/nec-baas/nec-baas-grafana-datasource.git"
   },
   "author": "NEC Corporation",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "devDependencies": {
     "@types/chai": "^4.1.6",
     "@types/mocha": "^5.2.3",
