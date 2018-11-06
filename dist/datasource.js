@@ -1,35 +1,15 @@
 /// <reference path="./grafana-sdk.d.ts" />
-System.register([], function (exports_1, context_1) {
+System.register(["./target_spec"], function (exports_1, context_1) {
     "use strict";
-    var TargetSpec, BaasDatasource;
+    var target_spec_1, BaasDatasource;
     var __moduleName = context_1 && context_1.id;
     return {
-        setters: [],
+        setters: [
+            function (target_spec_1_1) {
+                target_spec_1 = target_spec_1_1;
+            }
+        ],
         execute: function () {/// <reference path="./grafana-sdk.d.ts" />
-            /**
-             * Target spec
-             */
-            TargetSpec = /** @class */ (function () {
-                function TargetSpec(target) {
-                    this.target = target;
-                    // Get timestamp field spec.
-                    var t = target.split("@", 2);
-                    if (t.length == 2) {
-                        target = t[0];
-                        this.tsField = t[1];
-                    }
-                    // Split bucket name and field spec.
-                    t = target.split(".");
-                    if (t.length < 2) {
-                        throw new Error("Bad target.");
-                    }
-                    this.bucketName = t[0];
-                    t.shift();
-                    this.fieldName = t.join(".");
-                }
-                return TargetSpec;
-            }());
-            exports_1("TargetSpec", TargetSpec);
             BaasDatasource = /** @class */ (function () {
                 /**
                  * Constructor
@@ -77,32 +57,48 @@ System.register([], function (exports_1, context_1) {
                     var targets;
                     try {
                         targets = query.targets
-                            .map(function (t) { return new TargetSpec(t.target); });
+                            .map(function (t) { return new target_spec_1.TargetSpec(t.target); });
                     }
                     catch (e) {
                         return this.rejected(e);
                     }
-                    var mainTsField = targets[0].tsField || "updatedAt";
+                    // get parameters from head of targets
                     var bucketName = targets[0].bucketName;
-                    // URI for long query
-                    var uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
+                    var aggr = targets[0].aggr;
+                    var where = targets[0].where;
+                    var mainTsField = targets[0].tsField || "updatedAt";
                     // 検索条件
                     var gte = {};
                     gte[mainTsField] = { "$gte": options.range.from };
                     var lte = {};
                     lte[mainTsField] = { "$lte": options.range.to };
-                    var where = {
-                        "$and": [gte, lte]
-                    };
-                    var req = {
-                        url: uri,
-                        data: {
-                            where: where,
-                            order: "updatedAt",
-                            limit: options.maxDataPoints
-                        },
-                        method: "POST"
-                    };
+                    var whereAnd = [gte, lte];
+                    if (where != null) {
+                        whereAnd.push(where);
+                    }
+                    var req;
+                    if (aggr == null) {
+                        // long query API
+                        req = {
+                            url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query",
+                            data: {
+                                where: { "$and": whereAnd },
+                                order: "updatedAt",
+                                limit: options.maxDataPoints
+                            },
+                            method: "POST"
+                        };
+                    }
+                    else {
+                        // aggregation API
+                        var pipeline = aggr.pipeline;
+                        pipeline.unshift({ "$match": { "$and": whereAnd } });
+                        req = {
+                            url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_aggregate",
+                            data: aggr,
+                            method: "POST"
+                        };
+                    }
                     return this.doRequest(req)
                         .then(function (response) {
                         var status = response.status;

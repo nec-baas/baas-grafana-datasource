@@ -1,20 +1,7 @@
 /// <reference path="grafana-sdk.d.ts" />
 import { Datasource, QueryOptions, QueryResults, MetricFindQueryResults } from "app/plugins/sdk";
 import * as Q from 'q';
-/**
- * Target spec
- */
-export declare class TargetSpec {
-    /** target string */
-    target: string;
-    /** bucket name */
-    bucketName: string;
-    /** field name */
-    fieldName: string;
-    /** timestamp field name */
-    tsField: string;
-    constructor(target: string);
-}
+import { TargetSpec } from './target_spec';
 /**
  * BaaS Datasource
  */
