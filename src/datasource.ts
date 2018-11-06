@@ -2,40 +2,7 @@
 
 import {Datasource, QueryOptions, TimeSerieQueryResult, QueryResults, MetricFindQueryResults} from "app/plugins/sdk";
 import * as Q from 'q';
-
-/**
- * Target spec
- */
-export class TargetSpec {
-    /** target string */
-    target: string;
-    /** bucket name */
-    bucketName: string;
-    /** field name */
-    fieldName: string;
-    /** timestamp field name */
-    tsField: string;
-
-    constructor(target: string) {
-        this.target = target;
-
-        // Get timestamp field spec.
-        let t = target.split("@", 2);
-        if (t.length == 2) {
-            target = t[0];
-            this.tsField = t[1];
-        }
-
-        // Split bucket name and field spec.
-        t = target.split(".")
-        if (t.length < 2) {
-            throw new Error("Bad target.");
-        }
-        this.bucketName = t[0];
-        t.shift();
-        this.fieldName = t.join(".");
-    }
-}
+import {TargetSpec} from './target_spec';
 
 /**
  * BaaS Datasource
@@ -109,31 +76,46 @@ export class BaasDatasource implements Datasource {
         } catch (e) {
             return this.rejected(e);
         }
-        const mainTsField = targets[0].tsField || "updatedAt";
-        const bucketName = targets[0].bucketName;
 
-        // URI for long query
-        const uri = this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query";
+        // get parameters from head of targets
+        const bucketName = targets[0].bucketName;
+        const aggr = targets[0].aggr;
+        const where = targets[0].where;
+        const mainTsField = targets[0].tsField || "updatedAt";
 
         // 検索条件
         const gte = {};
         gte[mainTsField] = {"$gte": options.range.from};
         const lte = {};
-        lte[mainTsField] = {"$lte": options.range.to}
+        lte[mainTsField] = {"$lte": options.range.to};
 
-        const where = {
-            "$and": [ gte, lte ]
-        };
+        const whereAnd = [gte, lte];
+        if (where != null) {
+            whereAnd.push(where);
+        }
 
-        const req = {
-            url: uri,
-            data: {
-                where: where,
-                order: "updatedAt",
-                limit: options.maxDataPoints
-            },
-            method: "POST"
-        };
+        let req: object;
+        if (aggr == null) {
+            // long query API
+            req = {
+                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query",
+                data: {
+                    where: {"$and": whereAnd},
+                    order: "updatedAt",
+                    limit: options.maxDataPoints
+                },
+                method: "POST"
+            };
+        } else {
+            // aggregation API
+            const pipeline: [any] = aggr.pipeline;
+            pipeline.unshift({"$match": {"$and": whereAnd }});
+            req = {
+                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_aggregate",
+                data: aggr,
+                method: "POST"
+            };
+        }
         return this.doRequest(req)
             .then(response => {
                 const status = response.status;
