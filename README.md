@@ -10,7 +10,8 @@ Grafana から NEC モバイルバックエンド基盤(NEC BaaS) に REST API �
 インストール
 ------------
 
-Grafana の data/plugin ディレクトリに "baas-grafana-datasource" ディレクトリを作成し、
+/var/lib/grafana/plugins ディレクトリ、または data/plugins ディレクトリ (Grafana 本体からの相対ディレクトリ)
+に "baas-grafana-datasource" ディレクトリを作成し、
 本ディレクトリ以下の全ファイルを前記ディレクトリにインストールしてください。
 
 データソースの設定
