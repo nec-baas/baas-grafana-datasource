@@ -24,7 +24,7 @@ declare module 'app/plugins/sdk' {
         query(options: QueryOptions): Q.Promise<QueryResults>;
         testDatasource(): Q.Promise<any>;
         annotationQuery(options: any): Q.Promise<any>;
-        metricFindQuery(options: string): Q.Promise<MetricFindQueryResults>;
+        metricFindQuery(query: string): Q.Promise<MetricFindQueryResults>;
     }
 
     // Datasource query options
@@ -41,8 +41,12 @@ declare module 'app/plugins/sdk' {
         to: string;
     }
     export interface QueryOptionsTarget {
-        target: string;
         refId?: string;
+        bucket: string;
+        fieldName: string;
+        tsField?: string;
+        aggr?: string;
+        alias?: string;
         hide?: boolean;
         type?: string;
     }

@@ -1,38 +1,100 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
 import {QueryCtrl} from 'app/plugins/sdk';
+import {BaasDatasource} from './datasource';
+import {FieldCompleter} from './field_completer';
 
 export interface Target {
-    target: string;
-    type: string; // timeserie or table
-    rawQuery: boolean;
+    bucket: string;
+    fieldName: string;
+    tsField: string;
+    aggr: string;
+    alias: string;
 }
 
+/**
+ * BaaS Datasource Query Controller
+ */
 export class BaasDatasourceQueryCtrl extends QueryCtrl {
     static templateUrl = 'partials/query.editor.html';
 
-    /** angular scope object */
-    scope: any;
+    /** Old target */
+    oldTarget: Target;
 
-    /** Target */
-    target: Target;
+    /** Field completer */
+    fieldCompleter: any;
 
+    /**
+     * Constructor
+     * @param $scope scope of AngularJS 1.x.
+     * @param $injector $injector service of AngularJS 1.x.
+     */
+    /** @ngInject */
     constructor($scope: any, $injector: any) {
         super($scope, $injector);
-        this.scope = $scope;
-        this.target.target = this.target.target || 'select metric';
-        this.target.type = 'timeserie';
+        this.target.bucket = this.target.bucket || '';
+        this.target.fieldName = this.target.fieldName || '';
+        this.target.tsField = this.target.tsField || '';
+        this.target.aggr = this.target.aggr || '';
+        this.target.alias = this.target.alias || '';
+        this.oldTarget = JSON.parse(JSON.stringify(this.target)); // deep copy
+        this.fieldCompleter = new FieldCompleter(this.datasource, this.target.bucket);
     }
 
-    getOptions(query: any) {
-        return this.datasource.metricFindQuery('');
+    /**
+     * Get bucket list
+     * @return {Q.Promise<any>} bucket list
+     */
+    getBuckets(): Q.Promise<any> {
+        return this.datasource.metricFindQuery("buckets");
     }
 
-    toggleEditorMode() {
-        this.target.rawQuery = !this.target.rawQuery;
+    /**
+     * onChange event (bucket name)
+     */
+    onChangeBucket() {
+        if (this.onChangeInternal("bucket")) {
+            this.fieldCompleter.setBucket(this.target.bucket);
+        }
     }
 
-    onChangeInternal() {
+    /**
+     * onChange event (field name)
+     */
+    onChangeFieldName() {
+        this.onChangeInternal("fieldName");
+        this.fieldCompleter.clearCache()
+    }
+
+    /**
+     * onChange event (timestamp field)
+     */
+    onChangeTsField() {
+        this.onChangeInternal("tsField");
+        this.fieldCompleter.clearCache()
+    }
+
+    /**
+     * onChange event (aggregation pipeline)
+     */
+    onChangeAggregate() {
+        this.onChangeInternal("aggr");
+    }
+
+    private onChangeInternal(key: string): boolean {
+        if (this.target[key] === this.oldTarget[key]) {
+            return false;
+        }
+
+        this.oldTarget[key] = this.target[key];
         this.panelCtrl.refresh();
+        return true;
+    }
+
+    /**
+     * Get completer
+     */
+    getCompleter() {
+        return this.fieldCompleter;
     }
 }

@@ -1,28 +1,59 @@
-<query-editor-row query-ctrl="ctrl" class="generic-datasource-query-row" has-text-edit-mode="true">
+<query-editor-row query-ctrl="ctrl" has-text-edit-mode="false">
     <div class="gf-form-inline">
-        <!--
-        <div class="gf-form max-width-8">
-            <select class="gf-form-input" ng-model="ctrl.target.type" ng-options="f as f for f in ['timeserie']"></select>
-        </div>
-        -->
         <input type="hidden" ng-model="ctrl.target.type" value="timeserie">
 
-        <div class="gf-form" ng-if="ctrl.target.rawQuery">
-            <textarea class="gf-form-input" rows="5" ng-model="ctrl.target.target" spellcheck="false" ng-blur="ctrl.onChangeInternal()" />
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword">Bucket</label>
+            <gf-form-dropdown css-class="width-20"
+                              placeholder="bucket name"
+                              model="ctrl.target.bucket"
+                              allow-custom="true"
+                              lookup-text="true"
+                              get-options="ctrl.getBuckets()"
+                              on-change="ctrl.onChangeBucket()">
+            </gf-form-dropdown>
         </div>
 
-        <div ng-if="!ctrl.target.rawQuery">
-            <div class="gf-form">
-                <gf-form-dropdown model="ctrl.target.target"
-                                  allow-custom="true"
-                                  lookup-text="true"
-                                  get-options="ctrl.getOptions($query)"
-                                  on-change="ctrl.onChangeInternal()">
-                </gf-form-dropdown>
-            </div>
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword">Alias</label>
+            <input type="text" class="gf-form-input" ng-model="ctrl.target.alias" spellcheck='false' placeholder="alias patterns (optional)" ng-blur="ctrl.refresh()">
         </div>
+
         <div class="gf-form gf-form--grow">
             <div class="gf-form-label gf-form-label--grow"></div>
+        </div>
+    </div>
+
+    <div class="gf-form-inline">
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-10">Data field</label>
+            <code-editor content="ctrl.target.fieldName"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeFieldName()"
+                         get-completer="ctrl.getCompleter()">
+            </code-editor>
+        </div>
+    </div>
+
+    <div class="gf-form-inline">
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-10">Timestamp field</label>
+            <code-editor content="ctrl.target.tsField"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeTsField()"
+                         get-completer="ctrl.getCompleter()">
+            </code-editor>
+        </div>
+    </div>
+
+    <div class="gf-form-inline">
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label query-keyword width-10">Aggregation pipeline</label>
+            <code-editor content="ctrl.target.aggr"
+                         data-mode="json"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeAggregate()">
+            </code-editor>
         </div>
     </div>
 </query-editor-row>
