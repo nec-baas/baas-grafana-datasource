@@ -13,8 +13,8 @@
       "url": ""
     },
     "keywords": ["datasource", "baas"],
-    "version": "0.0.4",
-    "updated": "2018-06-29"
+    "version": "0.0.5",
+    "updated": "2018-11-15"
   },
 
   "dependencies": {
