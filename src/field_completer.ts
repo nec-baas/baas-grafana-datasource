@@ -1,5 +1,6 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
+import {Completion, CursorPosition} from "app/plugins/sdk";
 import {BaasDatasource} from './datasource';
 
 /**
@@ -21,7 +22,7 @@ export class FieldCompleter {
      * @param prefix
      * @param callback
      */
-    getCompletions(editor, session, pos, prefix, callback) {
+    getCompletions(editor: any, session: any, pos: CursorPosition, prefix: string, callback: (error: any, completions: Completion[]) => void) {
         if (!this.bucket || pos.row != 0) {
             callback(null, []);
             return;
@@ -56,7 +57,7 @@ export class FieldCompleter {
         this.objCache = null;
     }
 
-    private buildCompletions(obj: any, inputStr: string, cursor: number): any {
+    private buildCompletions(obj: object, inputStr: string, cursor: number): Completion[] {
         const inputFields = inputStr.split('.');
 
         // カーソルが何番目のフィールドを指しているか特定
@@ -70,7 +71,7 @@ export class FieldCompleter {
             obj = obj[inputFields[i]];
         }
 
-        const completions = [];
+        const completions: Completion[] = [];
         if (obj != null && typeof obj === 'object') {
             for (let key of Object.keys(obj)) {
                 completions.push({

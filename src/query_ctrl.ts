@@ -1,6 +1,6 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
-import {QueryCtrl} from 'app/plugins/sdk';
+import {QueryCtrl, MetricFindQueryResult} from 'app/plugins/sdk';
 import {BaasDatasource} from './datasource';
 import {FieldCompleter} from './field_completer';
 
@@ -22,7 +22,7 @@ export class BaasDatasourceQueryCtrl extends QueryCtrl {
     oldTarget: Target;
 
     /** Field completer */
-    fieldCompleter: any;
+    fieldCompleter: FieldCompleter;
 
     /**
      * Constructor
@@ -45,7 +45,7 @@ export class BaasDatasourceQueryCtrl extends QueryCtrl {
      * Get bucket list
      * @return {Q.Promise<any>} bucket list
      */
-    getBuckets(): Q.Promise<any> {
+    getBuckets(): Q.Promise<MetricFindQueryResult[]> {
         return this.datasource.metricFindQuery("buckets");
     }
 
@@ -94,7 +94,7 @@ export class BaasDatasourceQueryCtrl extends QueryCtrl {
     /**
      * Get completer
      */
-    getCompleter() {
+    getCompleter(): FieldCompleter {
         return this.fieldCompleter;
     }
 }

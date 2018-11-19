@@ -17,6 +17,30 @@ declare module 'app/plugins/sdk' {
         refresh(): void;
     }
 
+    // app/core/services/backend_srv.ts
+    export class BackendSrv {
+        datasourceRequest(option: BackendSrvRequest): Q.Promise<BackendSrvResponse>;
+    }
+
+    // app/core/services/backend_srv.ts
+    export class TemplateSrv {
+        replace(target: string, scopedVars?: any, format?: any): string;
+    }
+
+    // Datasource settings
+    export interface InstanceSettings {
+        name: string;
+        url: string;
+        jsonData?: BaasSettings;
+        basicAuth?: string;
+        withCredentials?: boolean;
+    }
+    export interface BaasSettings {
+        tenantId: string;
+        appId: string;
+        appKey: string;
+    }
+
     /**
      * Datasource
      */
@@ -24,7 +48,7 @@ declare module 'app/plugins/sdk' {
         query(options: QueryOptions): Q.Promise<QueryResults>;
         testDatasource(): Q.Promise<any>;
         annotationQuery(options: any): Q.Promise<any>;
-        metricFindQuery(query: string): Q.Promise<MetricFindQueryResults>;
+        metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]>;
     }
 
     // Datasource query options
@@ -49,6 +73,23 @@ declare module 'app/plugins/sdk' {
         alias?: string;
         hide?: boolean;
         type?: string;
+        reqIndex?: number;
+    }
+
+    // BackendSrv.datasourceRequest request
+    export interface BackendSrvRequest {
+        url: string;
+        method: string;
+        data?: any;
+        headers?: any;
+        withCredentials?: boolean;
+    }
+
+    // BackendSrv.datasourceRequest response
+    export interface BackendSrvResponse {
+        status:  number;
+        statusText: string;
+        data: any;
     }
 
     // Datasource.query response
@@ -60,12 +101,30 @@ declare module 'app/plugins/sdk' {
         datapoints: any[]; // array of [value, epoch]
     }
 
-    // Datasource.metricFindQuery response
-    export interface MetricFindQueryResults {
-        data: Metric[];
+    // Datasource.testDatasource response
+    export interface TestDatasourceResult {
+        status: string;
+        message: string;
+        title: string;
     }
-    export interface Metric {
-        text?: string;
-        value?: any;
+
+    // Datasource.metricFindQuery response
+    export interface MetricFindQueryResult {
+        text: string;
+        value: any;
+    }
+
+    /**
+     * Completer of Code Editor
+     */
+    export interface Completion {
+        caption: string;
+        value: string;
+        meta: string;
+    }
+
+    export interface CursorPosition {
+        column: number;
+        row: number;
     }
 }
