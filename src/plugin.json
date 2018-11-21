@@ -13,6 +13,10 @@
       "url": "https://jpn.nec.com"
     },
     "keywords": ["nec", "baas"],
+    "logos": {
+      "small": "img/icon720.png",
+      "large": "img/icon720.png"
+    },
     "version": "7.5.0",
     "updated": "2018-11-12"
   },
