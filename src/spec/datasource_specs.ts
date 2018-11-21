@@ -461,7 +461,69 @@ describe('Datasource', () => {
         return ds.testDatasource()
             .then((resp) => {
                 assert.equal(stub.callCount, 1);
-                assert.deepEqual(resp, {status: "success", message: "Server connected", title: "Success"});
+                assert.deepEqual(resp, {status: "success", message: "Server connected"});
+            });
+    });
+
+    it('should testDatasource works: error response with body', () => {
+        const ds = createInstance();
+        const stub = sinon.stub(backendSrv, 'datasourceRequest');
+
+        stub.onCall(0).returns(
+            new Promise((resolve, reject) => {
+                reject({
+                    status: 401,
+                    statusText: "Unauthorized",
+                    data: {
+                        error: "Authentication failed"
+                    }
+                })
+            })
+        );
+
+        return ds.testDatasource()
+            .then((resp) => {
+                assert.equal(stub.callCount, 1);
+                assert.deepEqual(resp, {status: "error", message: "Authentication failed"});
+            });
+    });
+
+    it('should testDatasource works: error response without body', () => {
+        const ds = createInstance();
+        const stub = sinon.stub(backendSrv, 'datasourceRequest');
+
+        stub.onCall(0).returns(
+            new Promise((resolve, reject) => {
+                reject({
+                    status: 401,
+                    statusText: "Unauthorized",
+                })
+            })
+        );
+
+        return ds.testDatasource()
+            .then((resp) => {
+                assert.equal(stub.callCount, 1);
+                assert.deepEqual(resp, {status: "error", message: "HTTP Error (401) Unauthorized"});
+            });
+    });
+
+    it('should testDatasource works: without statusText', () => {
+        const ds = createInstance();
+        const stub = sinon.stub(backendSrv, 'datasourceRequest');
+
+        stub.onCall(0).returns(
+            new Promise((resolve, reject) => {
+                reject({
+                    status: -1
+                })
+            })
+        );
+
+        return ds.testDatasource()
+            .then((resp) => {
+                assert.equal(stub.callCount, 1);
+                assert.deepEqual(resp, {status: "error", message: "Connection failed"});
             });
     });
 

@@ -105,7 +105,6 @@ declare module 'app/plugins/sdk' {
     export interface TestDatasourceResult {
         status: string;
         message: string;
-        title: string;
     }
 
     // Datasource.metricFindQuery response

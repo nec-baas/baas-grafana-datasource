@@ -249,10 +249,21 @@ export class BaasDatasource implements Datasource {
         return this.doRequest({
             url: this.baseUri + "/1/" + this.tenantId + "/buckets/object",
             method: "GET"
-        }).then(response => {
-            if (response.status == 200) {
-                return {status: "success", message: "Server connected", title: "Success"};
+        }).then((response) => {
+            this.log("status: " + response.status);
+            return {status: "success", message: "Server connected"};
+        }, (error) => {
+            let message: string;
+
+            if (error.data && error.data.error) {
+                message = error.data.error
+            } else if (error.statusText) {
+                message = `HTTP Error (${error.status}) ${error.statusText}`;
+            } else {
+                message = "Connection failed"
             }
+
+            return {status: "error", message: message};
         });
     }
 
