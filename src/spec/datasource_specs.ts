@@ -562,6 +562,58 @@ describe('Datasource', () => {
             });
     });
 
+    it('should metricFindQuery works: Concurrent requests', () => {
+        const ds = createInstance();
+        const stub = sinon.stub(backendSrv, 'datasourceRequest');
+
+        stub.onCall(0).returns(
+            new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    resolve({
+                        status: 200,
+                        data: {
+                            results: [{name: "bucket1"}, {name: "bucket2"}]
+                        }
+                    });
+                }, 10);
+            })
+        );
+
+        return Promise.all([ds.metricFindQuery("buckets"), ds.metricFindQuery("buckets"), ds.metricFindQuery("buckets")])
+            .then((results) => {
+                assert.equal(stub.callCount, 1);
+                assert.equal(results.length, 3)
+                for (let buckets of results) {
+                    assert.deepEqual(buckets,
+                             [{text: "bucket1", value: "bucket1"}, {text: "bucket2", value: "bucket2"}]);
+                }
+            });
+    });
+
+    it('should metricFindQuery works: Concurrent requests: error response', () => {
+        const ds = createInstance();
+        const stub = sinon.stub(backendSrv, 'datasourceRequest');
+
+        stub.onCall(0).returns(
+            new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    reject({
+                        status: 401,
+                    });
+                }, 10);
+            })
+        );
+
+        return Promise.all([ds.metricFindQuery("buckets"), ds.metricFindQuery("buckets"), ds.metricFindQuery("buckets")])
+            .then((results) => {
+                assert.equal(stub.callCount, 1);
+                assert.equal(results.length, 3)
+                for (let buckets of results) {
+                    assert.deepEqual(buckets, []);
+                }
+            });
+    });
+
     it('should getLatestObject works', () => {
         const ds = createInstance();
         const stub = createDatasourceRequestStub(backendSrv);

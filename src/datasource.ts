@@ -15,6 +15,7 @@ export class BaasDatasource implements Datasource {
     withCredentials: boolean;
 
     cacheBuckets: string[];
+    deferredBuckets: Q.Deferred<MetricFindQueryResult[]>[];
 
     private log(msg: string) {
         //console.log(msg);
@@ -47,6 +48,7 @@ export class BaasDatasource implements Datasource {
         this.withCredentials = instanceSettings.withCredentials;
 
         this.cacheBuckets = null;
+        this.deferredBuckets = null;
     }
 
     /**
@@ -289,16 +291,43 @@ export class BaasDatasource implements Datasource {
                 return this.$q.when(this.cacheBuckets);
             }
 
+            // 実行中のリクエストがある場合はレスポンスを待つ
+            if (this.deferredBuckets != null) {
+                this.log("metricFindQuery deferred");
+                let deferred = this.$q.defer();
+                this.deferredBuckets.push(deferred);
+                return deferred.promise;
+            }
+
+            this.deferredBuckets = [];
+
             return this.doRequest({
                 url: this.baseUri + "/1/" + this.tenantId + "/buckets/object",
                 method: "GET"
-            }).then(response => {
+            }).then((response) => {
                 const buckets = [];
                 for (let result of response.data.results) {
                     const bucket = result.name;
                     buckets.push({text: bucket, value: bucket});
                 }
                 this.cacheBuckets = buckets;
+
+                // リクエスト実行中に受けた要求を全て返す
+                for (let deferred of this.deferredBuckets) {
+                    deferred.resolve(buckets);
+                }
+
+                this.deferredBuckets = null;
+                return buckets;
+            }, (error) => {
+                this.log("metricFindQuery error");
+                // エラーの場合はバケットリスト空とする
+                const buckets = [];
+                for (let deferred of this.deferredBuckets) {
+                    deferred.resolve(buckets);
+                }
+                this.deferredBuckets = null;
+
                 return buckets;
             });
         }
