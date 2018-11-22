@@ -1,6 +1,9 @@
 NEC BaaS datasource plugin for Grafana
 ======================================
 
+[![Build Status](https://travis-ci.org/nec-baas/grafana-baas-object-datasource.svg?branch=master)](https://travis-ci.org/nec-baas/grafana-baas-object-datasource)
+[![Build Status](https://travis-ci.org/nec-baas/grafana-baas-object-datasource.svg?branch=develop)](https://travis-ci.org/nec-baas/grafana-baas-object-datasource)
+
 概要
 ----
 
