@@ -1,6 +1,6 @@
 {
-  "name": "nec-baas-grafana-datasource",
-  "version": "7.5.0 b1",
+  "name": "nec-baas-object-datasource",
+  "version": "7.5.0-b1",
   "description": "Grafana DataSource plugin for NEC BaaS",
   "main": "index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nec-baas/nec-baas-grafana-datasource.git"
+    "url": "https://github.com/nec-baas/grafana-baas-object-datasource"
   },
   "author": "NEC Corporation",
   "license": "Apache-2.0",
