@@ -10,15 +10,19 @@
     "description": "NEC BaaS JSON object storage datasource for grafana",
     "author": {
       "name": "NEC Corporation",
-      "url": ""
+      "url": "https://jpn.nec.com"
     },
-    "keywords": ["datasource", "baas"],
-    "version": "0.0.5",
-    "updated": "2018-11-15"
+    "keywords": ["nec", "baas"],
+    "logos": {
+      "small": "img/icon720.png",
+      "large": "img/icon720.png"
+    },
+    "version": "7.5.0 b1",
+    "updated": "2018-11-22"
   },
 
   "dependencies": {
-    "grafanaVersion": "3.x 4.x 5.x",
+    "grafanaVersion": "5.3.x",
     "plugins": []
   }
 }

@@ -7,7 +7,6 @@ System.register([], function (exports_1, context_1) {
         execute: function () {
             BaasConfigCtrl = /** @class */ (function () {
                 function BaasConfigCtrl($scope) {
-                    console.log("BaasConfigCtrl: constructor");
                     this.current.jsonData.tenantId = this.current.jsonData.tenantId || "";
                     this.current.jsonData.appId = this.current.jsonData.appId || "";
                     this.current.jsonData.appKey = this.current.jsonData.appKey || "";

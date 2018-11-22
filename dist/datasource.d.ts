@@ -1,20 +1,19 @@
 /// <reference path="grafana-sdk.d.ts" />
-import { Datasource, QueryOptions, QueryResults, MetricFindQueryResults } from "app/plugins/sdk";
-import * as Q from 'q';
-import { TargetSpec } from './target_spec';
+import { Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget, TimeSerieQueryResult, QueryResults, TestDatasourceResult, MetricFindQueryResult } from "app/plugins/sdk";
 /**
  * BaaS Datasource
  */
 export declare class BaasDatasource implements Datasource {
+    private backendSrv;
+    private $q;
+    private templateSrv;
     name: string;
     baseUri: string;
     tenantId: string;
     headers: any;
-    backendSrv: any;
-    templateSrv: any;
-    q: any;
-    /** Candidates of time stamp field name */
-    static TimeStampFields: string[];
+    withCredentials: boolean;
+    cacheBuckets: string[];
+    deferredBuckets: Q.Deferred<MetricFindQueryResult[]>[];
     private log;
     /**
      * Constructor
@@ -24,20 +23,24 @@ export declare class BaasDatasource implements Datasource {
      * @param templateSrv TemplateSrv of Grafana.
      */
     /** @ngInject */
-    constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any);
+    constructor(instanceSettings: InstanceSettings, backendSrv: BackendSrv, $q: any, templateSrv: TemplateSrv);
     /**
      * Query metrics from data source.
      * @param {module:app/plugins/sdk.QueryOptions} options
      * @return {Q.Promise<QueryResults>} results
      */
     query(options: QueryOptions): Q.Promise<QueryResults>;
+    private buildQueryParameters;
+    private filterSameRequest;
+    private doRequest;
+    private doRequestTargets;
     /**
      * Convert http response of baas server to QueryResults.
-     * @param {TargetSpec[]} targets
+     * @param target
      * @param data response data
-     * @return {module:app/plugins/sdk.QueryResults}
+     * @return {module:app/plugins/sdk.TimeSerieQueryResult}
      */
-    convertResponse(targets: TargetSpec[], data: any): QueryResults;
+    convertResponse(target: QueryOptionsTarget, data: any): TimeSerieQueryResult;
     /**
      * Extract value of specified filed from JSON.
      * @param obj JSON Object
@@ -54,9 +57,9 @@ export declare class BaasDatasource implements Datasource {
     extractTimestamp(obj: any, tsField: string): Date;
     /**
      * Test datasource connection.
-     * note: no authentication is tested.
+     * @return {Q.Promise<TestDatasourceResult>} result
      */
-    testDatasource(): Q.Promise<any>;
+    testDatasource(): Q.Promise<TestDatasourceResult>;
     /**
      * Annotation query. Not supported.
      * @param options
@@ -64,13 +67,15 @@ export declare class BaasDatasource implements Datasource {
      */
     annotationQuery(options: any): Q.Promise<any>;
     /**
-     * Metric find query. Not implemented.
-     * @param options
-     * @return {Q.Promise<any>}
+     * Metric find query.
+     * @param {string} query condition
+     * @return {Q.Promise<MetricFindQueryResult[]>} results
      */
-    metricFindQuery(options: string): Q.Promise<MetricFindQueryResults>;
-    private resolved;
-    private rejected;
-    private doRequest;
-    private buildQueryParameters;
+    metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]>;
+    /**
+     * Get latest object.
+     * @param {string} bucket name
+     * @return {Q.Promise<object>} result
+     */
+    getLatestObject(bucket: string): Q.Promise<object>;
 }
