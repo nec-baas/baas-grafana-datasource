@@ -27,7 +27,7 @@ Grafana の設定画面から "NEC BaaS" データソースを追加してくだ
 
 ユーザ認証が必要な場合は、Basic Auth を指定して User/Password を入力してください。
 Access を Browser に設定して Basic Auth を使用する場合は、With Credentials にチェックを入れてください。また、BaaS サーバのテナント設定で CORS有効・Access-Control-Allow-Credentials を許可し、CORS許可ドメインリストを正しく設定してください。
-なお、Basic Auth を使用するためには、BaaS Server v7.5.0 beta3 以上が必要です。
+なお、Basic Auth を使用するためには、BaaS Server v7.5.0 以上が必要です。
 
 Access が Server の場合は、クライアント証明書認証も利用可能です。
 
@@ -74,7 +74,14 @@ Pipelineは、Aggregation JSON 配列で指定してください。
 以下に例を示します。
 
 ##### Aggregation pipeline
-    [ {$match: {中略}} ]
+
+    [
+      {
+        "$match": {
+          (クエリ式)
+        }
+      }
+    ]
 
 バージョン互換について
 ----------------------

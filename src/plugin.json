@@ -1,7 +1,7 @@
 {
   "type": "datasource",
-  "name": "NEC BaaS",
-  "id": "nec-baas-grafana-datasource",
+  "name": "NEC BaaS Object Storage Datasource",
+  "id": "nec-baas-object-datasource",
 
   "metrics": true,
   "annotations": false,
@@ -17,7 +17,7 @@
       "small": "img/icon720.png",
       "large": "img/icon720.png"
     },
-    "version": "7.5.0 b1",
+    "version": "7.5.0-b1",
     "updated": "2018-11-22"
   },
 
