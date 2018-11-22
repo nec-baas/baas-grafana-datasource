@@ -1,8 +1,8 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
-import {Datasource, QueryOptions, TimeSerieQueryResult, QueryResults, MetricFindQueryResults} from "app/plugins/sdk";
-import * as Q from 'q';
-import {TargetSpec} from './target_spec';
+import {Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget,
+        BackendSrvRequest, BackendSrvResponse, TimeSerieQueryResult, QueryResults,
+        TestDatasourceResult, MetricFindQueryResult} from "app/plugins/sdk";
 
 /**
  * BaaS Datasource
@@ -12,13 +12,10 @@ export class BaasDatasource implements Datasource {
     baseUri: string;
     tenantId: string;
     headers: any;
+    withCredentials: boolean;
 
-    backendSrv: any;
-    templateSrv: any;
-    q: any;
-
-    /** Candidates of time stamp field name */
-    static TimeStampFields = ["updatedAt", "createdAt"];
+    cacheBuckets: string[];
+    deferredBuckets: Q.Deferred<MetricFindQueryResult[]>[];
 
     private log(msg: string) {
         //console.log(msg);
@@ -32,7 +29,7 @@ export class BaasDatasource implements Datasource {
      * @param templateSrv TemplateSrv of Grafana.
      */
     /** @ngInject */
-    constructor(instanceSettings: any, backendSrv: any, $q: any, templateSrv: any) {
+    constructor(instanceSettings: InstanceSettings, private backendSrv: BackendSrv, private $q: any, private templateSrv: TemplateSrv) {
         this.log("baas datasource: constructor");
         this.name = instanceSettings.name;
 
@@ -48,9 +45,10 @@ export class BaasDatasource implements Datasource {
             this.headers['Authorization'] = instanceSettings.basicAuth;
         }
 
-        this.backendSrv = backendSrv;
-        this.templateSrv = templateSrv;
-        this.q = $q;
+        this.withCredentials = instanceSettings.withCredentials;
+
+        this.cacheBuckets = null;
+        this.deferredBuckets = null;
     }
 
     /**
@@ -60,99 +58,151 @@ export class BaasDatasource implements Datasource {
      */
     query(options: QueryOptions): Q.Promise<QueryResults> {
         this.log("query: " + JSON.stringify(options));
-        const query = this.buildQueryParameters(options);
-        query.targets = query.targets
+        const targets = this.buildQueryParameters(options)
             .filter(t => !t.hide)
-            .filter(t => t.target != null);
+            .filter(t => t.bucket && t.fieldName);
 
-        if (query.targets.length <= 0) {
-            return this.resolved({data: []}) // no targets
+        if (targets.length <= 0) {
+            return this.$q.when({data: []}); // no targets
         }
 
-        let targets: TargetSpec[];
-        try {
-            targets = query.targets
-                .map(t => new TargetSpec(t.target));
-        } catch (e) {
-            return this.rejected(e);
-        }
+        const reqTargets = this.filterSameRequest(targets);
 
-        // get parameters from head of targets
-        const bucketName = targets[0].bucketName;
-        const aggr = targets[0].aggr;
-        const where = targets[0].where;
-        const mainTsField = targets[0].tsField || "updatedAt";
+        const promises = this.doRequestTargets(reqTargets, options);
+        return this.$q.all(promises)
+            .then(responses => {
+                const results = [];
 
-        // 検索条件
-        const gte = {};
-        gte[mainTsField] = {"$gte": options.range.from};
-        const lte = {};
-        lte[mainTsField] = {"$lte": options.range.to};
+                for (let target of targets) {
+                    const data = responses[target.reqIndex].data;
 
-        const whereAnd = [gte, lte];
-        if (where != null) {
-            whereAnd.push(where);
-        }
+                    results.push(this.convertResponse(target, data));
+                }
 
-        let req: object;
-        if (aggr == null) {
-            // long query API
-            req = {
-                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query",
-                data: {
-                    where: {"$and": whereAnd},
-                    order: "updatedAt",
-                    limit: options.maxDataPoints
-                },
-                method: "POST"
-            };
-        } else {
-            // aggregation API
-            const pipeline: [any] = aggr.pipeline;
-            pipeline.unshift({"$match": {"$and": whereAnd }});
-            req = {
-                url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_aggregate",
-                data: aggr,
-                method: "POST"
-            };
-        }
-        return this.doRequest(req)
-            .then(response => {
-                const status = response.status;
-                const data = response.data;
-
-                return this.convertResponse(targets, data);
+                return {data: results};
             });
+    }
+
+    private buildQueryParameters(options: QueryOptions): QueryOptionsTarget[] {
+        const targets = [];
+
+        for (let target of options.targets) {
+            targets.push({
+                bucket: this.templateSrv.replace(target.bucket),
+                fieldName: this.templateSrv.replace(target.fieldName),
+                tsField: this.templateSrv.replace(target.tsField) || "updatedAt",
+                aggr: target.aggr,
+                alias: target.alias,
+                hide: target.hide
+            });
+        }
+        return targets;
+    }
+
+    private filterSameRequest(targets: QueryOptionsTarget[]): QueryOptionsTarget[] {
+        const reqTargets = [];
+
+        for (let target of targets) {
+            target.reqIndex = null;
+
+            for (let i = 0; i < reqTargets.length; i++) {
+                const reqTarget = reqTargets[i];
+                if (target.bucket == reqTarget.bucket && target.tsField == reqTarget.tsField && target.aggr == reqTarget.aggr) {
+                    target.reqIndex = i;
+                    break;
+                }
+            }
+
+            if (target.reqIndex == null) {
+                target.reqIndex = reqTargets.length;
+                reqTargets.push(target);
+            }
+        }
+        return reqTargets;
+    }
+
+    private doRequest(req: BackendSrvRequest): Q.Promise<BackendSrvResponse> {
+        req.headers = this.headers;
+        req.withCredentials = this.withCredentials;
+        this.log("doRequest: " + JSON.stringify(req));
+        return this.backendSrv.datasourceRequest(req);
+    }
+
+    private doRequestTargets(targets: QueryOptionsTarget[], options: QueryOptions): Q.Promise<BackendSrvResponse>[] {
+        const promises = [];
+
+        for (let target of targets) {
+            // get parameters from head of targets
+            const bucketName = target.bucket;
+            const aggr = target.aggr;
+            const mainTsField = target.tsField;
+
+            // 検索条件
+            const gte = {};
+            gte[mainTsField] = {"$gte": options.range.from};
+            const lte = {};
+            lte[mainTsField] = {"$lte": options.range.to};
+
+            const whereAnd = [gte, lte];
+
+            let req: BackendSrvRequest;
+            if (!aggr) {
+                // long query API
+                req = {
+                    url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_query",
+                    data: {
+                        where: {"$and": whereAnd},
+                        order: mainTsField,
+                        limit: options.maxDataPoints
+                    },
+                    method: "POST"
+                };
+            } else {
+                // aggregation API
+                const pipeline: [any] = JSON.parse(aggr);
+                pipeline.unshift({"$match": {"$and": whereAnd }});
+                pipeline.push({"$limit": options.maxDataPoints})
+                req = {
+                    url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucketName + "/_aggregate",
+                    data: {pipeline: pipeline},
+                    method: "POST"
+                };
+            }
+
+            promises.push(this.doRequest(req));
+        }
+
+        return promises;
     }
 
     /**
      * Convert http response of baas server to QueryResults.
-     * @param {TargetSpec[]} targets
+     * @param target
      * @param data response data
-     * @return {module:app/plugins/sdk.QueryResults}
+     * @return {module:app/plugins/sdk.TimeSerieQueryResult}
      */
-    convertResponse(targets: TargetSpec[], data: any): QueryResults {
-        const results: TimeSerieQueryResult[] = [];
+    convertResponse(target: QueryOptionsTarget, data: any): TimeSerieQueryResult {
+        const key = target.fieldName;
+        const tsField = target.tsField;
+        const alias = target.alias || target.bucket + '.' + target.fieldName;
 
-        for (let target of targets) {
-            const key = target.fieldName;
-            const tsField = target.tsField;
+        // convert to datapoint
+        const datapoints = [];
+        for (let e of data.results) {
+            const value = this.extractValue(e, key);
+            const ts = this.extractTimestamp(e, tsField);
 
-            // convert to datapoint
-            const datapoints = [];
-            for (let e of data.results) {
-                const value = this.extractValue(e, key);
-                const ts = this.extractTimestamp(e, tsField);
-
-                datapoints.push([value, ts.getTime()]);
+            if (value == null || ts == null) {
+                continue;
             }
-            results.push({
-                target: target.target,
-                datapoints: datapoints
-            });
+
+            datapoints.push([value, ts.getTime()]);
         }
 
-        return {"data": results};
+        return {
+            target: alias,
+            datapoints: datapoints
+        };
     }
 
     /**
@@ -164,7 +214,11 @@ export class BaasDatasource implements Datasource {
     extractValue(obj: any, key: string): any {
         const keys = key.split('.');
         for (let key of keys) {
-            obj = obj[key];
+            if (obj != null && typeof obj === 'object' && key in obj) {
+                obj = obj[key];
+            } else {
+                return null;
+            }
         }
         return obj;
     }
@@ -177,31 +231,41 @@ export class BaasDatasource implements Datasource {
      */
     extractTimestamp(obj: any, tsField: string): Date {
         if (tsField != null) {
-            return new Date(this.extractValue(obj, tsField));
-        }
-
-        for (let key of BaasDatasource.TimeStampFields) {
-            if (key in obj) {
-                // 値は文字列(dateString)または Unix epoch millis
-                return new Date(obj[key]);
+            const ts = this.extractValue(obj, tsField);
+            if (ts != null) {
+                return new Date(ts);
+            } else {
+                return null;
             }
         }
+
         return null;
     }
 
     /**
      * Test datasource connection.
-     * note: no authentication is tested.
+     * @return {Q.Promise<TestDatasourceResult>} result
      */
-    testDatasource(): Q.Promise<any> {
+    testDatasource(): Q.Promise<TestDatasourceResult> {
         this.log("testDatasource");
         return this.doRequest({
-            url: this.baseUri + "/1/_health",
+            url: this.baseUri + "/1/" + this.tenantId + "/buckets/object",
             method: "GET"
-        }).then(response => {
-            if (response.status == 200) {
-                return {status: "success", message: "Server connected", title: "Success"};
+        }).then((response) => {
+            this.log("status: " + response.status);
+            return {status: "success", message: "Server connected"};
+        }, (error) => {
+            let message: string;
+
+            if (error.data && error.data.error) {
+                message = error.data.error
+            } else if (error.statusText) {
+                message = `HTTP Error (${error.status}) ${error.statusText}`;
+            } else {
+                message = "Connection failed"
             }
+
+            return {status: "error", message: message};
         });
     }
 
@@ -216,51 +280,85 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * Metric find query. Not implemented.
-     * @param options
-     * @return {Q.Promise<any>}
+     * Metric find query.
+     * @param {string} query condition
+     * @return {Q.Promise<MetricFindQueryResult[]>} results
      */
-    metricFindQuery(options: string): Q.Promise<MetricFindQueryResults> {
-        this.log("metricFindQuery");
-        return this.q.when({ data: [] });
-    }
-
-    private resolved(data: any): Q.Promise<any> {
-        this.log("resolved");
-        const deferred: Q.Deferred<any> = this.q.defer();
-        deferred.resolve(data);
-        return deferred.promise;
-    }
-
-    private rejected(data: any): Q.Promise<any> {
-        this.log("rejected");
-        const deferred: Q.Deferred<any> = this.q.defer();
-        deferred.reject(data);
-        return deferred.promise;
-    }
-
-    private doRequest(options: any): Q.Promise<any> {
-        this.log("doRequest");
-        options.headers = this.headers;
-        return this.backendSrv.datasourceRequest(options);
-    }
-
-    private buildQueryParameters(options: QueryOptions): any {
-        const targets = [];
-
-        for (let target of options.targets) {
-            if (target.target === 'select metric') {
-                continue;
+    metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]> {
+        this.log("metricFindQuery: " + query);
+        if (query == 'buckets') {   // Get bucket list
+            if (this.cacheBuckets != null) {
+                return this.$q.when(this.cacheBuckets);
             }
-            targets.push({
-                target: this.templateSrv.replace(target.target, options.scopedVars, 'regex'),
-                refId: target.refId,
-                hide: target.hide,
-                type: target.type || 'timeserie'
+
+            // 実行中のリクエストがある場合はレスポンスを待つ
+            if (this.deferredBuckets != null) {
+                this.log("metricFindQuery deferred");
+                let deferred = this.$q.defer();
+                this.deferredBuckets.push(deferred);
+                return deferred.promise;
+            }
+
+            this.deferredBuckets = [];
+
+            return this.doRequest({
+                url: this.baseUri + "/1/" + this.tenantId + "/buckets/object",
+                method: "GET"
+            }).then((response) => {
+                const buckets = [];
+                for (let result of response.data.results) {
+                    const bucket = result.name;
+                    buckets.push({text: bucket, value: bucket});
+                }
+                this.cacheBuckets = buckets;
+
+                // リクエスト実行中に受けた要求を全て返す
+                for (let deferred of this.deferredBuckets) {
+                    deferred.resolve(buckets);
+                }
+
+                this.deferredBuckets = null;
+                return buckets;
+            }, (error) => {
+                this.log("metricFindQuery error");
+                // エラーの場合はバケットリスト空とする
+                const buckets = [];
+                for (let deferred of this.deferredBuckets) {
+                    deferred.resolve(buckets);
+                }
+                this.deferredBuckets = null;
+
+                return buckets;
             });
         }
-        options.targets = targets;
-        return options;
+
+        return this.$q.when([]);
+    }
+
+    /**
+     * Get latest object.
+     * @param {string} bucket name
+     * @return {Q.Promise<object>} result
+     */
+    getLatestObject(bucket: string): Q.Promise<object> {
+        this.log("getLatestObject: " + bucket);
+        return this.doRequest({
+            url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucket + "/_query",
+            data: {
+                order: "-updatedAt",
+                limit: 1
+            },
+            method: "POST"
+        }).then(response => {
+            if (response.data.results.length == 1) {
+                this.log("latest object: " + JSON.stringify(response.data.results[0]));
+                return response.data.results[0];
+            } else {
+                return {};
+            }
+        }).catch(e => {
+            return {};
+        });
     }
 }
 
