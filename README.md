@@ -20,19 +20,29 @@ Grafana から NEC モバイルバックエンド基盤(NEC BaaS) に REST API �
 データソースの設定
 -------------------
 
-Grafana の設定画面から "NEC BaaS" データソースを追加してください。
+Grafana の設定画面から "NEC BaaS Object Storage Datasource" データソースを追加してください。
 設定項目は以下の通りです。
 
 * HTTP URL: BaaS API サーバのベース URI を指定してください(例: "https://baas.example.com/api")
+* HTTP Access: BaaS API サーバへのアクセス方法を選択してください
 * Tenant ID: BaaSテナントIDを指定してください。
 * App ID: BaaSアプリケーションIDを指定してください。
 * App/Master Key: BaaSアプリケーション/マスターキーを指定してください。
 
-ユーザ認証が必要な場合は、Basic Auth を指定して User/Password を入力してください。
-Access を Browser に設定して Basic Auth を使用する場合は、With Credentials にチェックを入れてください。また、BaaS サーバのテナント設定で CORS有効・Access-Control-Allow-Credentials を許可し、CORS許可ドメインリストを正しく設定してください。
+### アクセス方法
+
+BaaS APIサーバへのアクセス方法を選択します。
+
+* Server(default): Grafana サーバを Proxy として BaaS API サーバに接続します。よって、Grafana サーバから BaaS API サーバに接続可能である必要があります。
+* Browser: 使用しているブラウザから直接 BaaS API サーバに接続します。ブラウザから BaaS API サーバに接続できるよう Proxy 等の設定をしてください。また、CORSとなるため、BaaS サーバのテナント設定で CORS有効・Access-Control-Allow-Credentials を許可に設定し、CORS許可ドメインリストを正しく設定してください。
+
+### ユーザ認証
+
+ユーザ認証に Basic 認証が利用可能です。Basic Auth を指定して User/Password を入力してください。
+アクセス方法が Browser で Basic Auth を使用する場合は、With Credentials にチェックを入れてください。
 なお、Basic Auth を使用するためには、BaaS Server v7.5.0 以上が必要です。
 
-Access が Server の場合は、クライアント証明書認証も利用可能です。
+アクセス方法が Server の場合は、クライアント証明書認証も利用可能です。TLS Client Auth を設定して、Client Cert/Client Key を入力してください。自己署名の証明書を使用する場合は、With CA Cert を設定し、CA Cert を入力してください。
 
 Dashboard / クエリ条件(Target)
 -------------------------------
@@ -54,15 +64,28 @@ JSON の深い階層のデータを取得する場合は、Data field にキー�
 例えば以下のようなデータがバケット "bucket1" にあるとき、
 
     // 対象データ
-    { payload: [ { temperature: 26.5, timestamp: "2018-01-01T00:00:00.000Z" } ], createdAt: "2018-06-29T00:00:00.000Z" }
+    {
+      payload: [
+        {
+          temperature: 26.5,
+          timestamp: "2018-01-01T00:00:00.000Z"
+        }
+      ],
+      createdAt: "2018-06-29T00:00:00.000Z"
+    }
     
 上記データから temperature の値を抽出し、タイムスタンプとして timestamp を使用するする場合は、クエリ条件には以下のように指定します。
 
 ##### Bucket
+
     bucket1
+
 ##### Data field
+
     payload.0.temperature
+
 ##### Timestamp field
+
     payload.0.timestamp
 
 ### タイムスタンプフィールド値
@@ -72,22 +95,40 @@ JSON の深い階層のデータを取得する場合は、Data field にキー�
 ### MongoDB Aggregation
 
 MongoDB の Aggregation を指定することができます。
-Pipelineは、Aggregation JSON 配列で指定してください。
+検索条件を追加したい場合は、Aggregation で検索条件を指定してください。
+Aggregation pipelineは、JSON 配列で入力します。
 
-以下に例を示します。
+以下に temperature が 50 以上のものを絞り込むときの設定例を示します。
 
 ##### Aggregation pipeline
 
     [
       {
         "$match": {
-          (クエリ式)
-        }
+          "temperature": {
+            "$gte": 50
+           }
+         }
       }
     ]
+
+### Variables(変数の利用)
+
+以下のクエリ条件には変数を使用することができます。
+
+* Bucket
+* Data field
+* Timestamp field
+
+Bucket には、BaaS API サーバから取得したバケット一覧を使用することができます。
+以下のように変数設定してください。
+
+* General > Type を "Query" に設定
+* Query Options > Data source を NEC BaaS Object Storage Datasource で作成したデータソースに設定
+* Query Options > Query に "buckets" を入力
 
 バージョン互換について
 ----------------------
 
-ver 0.0.5 以前のバージョンで保存したクエリ条件とは互換性がありません。
-ver 0.0.5 以前のプラグインからアップデートする場合は、クエリ条件を再設定してください。
+ver 0.0.5 以前 と ver 7.5.0 以降ではGrafanaプラグインとして互換性がありません。
+データソース設定、クエリ条件を再設定して使用してください。
