@@ -3,6 +3,7 @@
 import {Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget,
         BackendSrvRequest, BackendSrvResponse, TimeSerieQueryResult, QueryResults,
         TestDatasourceResult, MetricFindQueryResult} from "app/plugins/sdk";
+import * as Q from 'q';
 
 /**
  * BaaS Datasource
@@ -14,7 +15,7 @@ export class BaasDatasource implements Datasource {
     headers: any;
     withCredentials: boolean;
 
-    cacheBuckets: string[];
+    cacheBuckets: MetricFindQueryResult[];
     deferredBuckets: Q.Deferred<MetricFindQueryResult[]>[];
 
     private log(msg: string) {
@@ -54,22 +55,22 @@ export class BaasDatasource implements Datasource {
     /**
      * Query metrics from data source.
      * @param {module:app/plugins/sdk.QueryOptions} options
-     * @return {Q.Promise<QueryResults>} results
+     * @return {Promise<QueryResults>} results
      */
-    query(options: QueryOptions): Q.Promise<QueryResults> {
+    query(options: QueryOptions): Promise<QueryResults> {
         this.log("query: " + JSON.stringify(options));
         const targets = this.buildQueryParameters(options)
             .filter(t => !t.hide)
             .filter(t => t.bucket && t.fieldName);
 
         if (targets.length <= 0) {
-            return this.$q.when({data: []}); // no targets
+            return Promise.resolve({data: []}); // no targets
         }
 
         const reqTargets = this.filterSameRequest(targets);
 
         const promises = this.doRequestTargets(reqTargets, options);
-        return this.$q.all(promises)
+        return Promise.all(promises)
             .then(responses => {
                 const results = [];
 
@@ -121,14 +122,14 @@ export class BaasDatasource implements Datasource {
         return reqTargets;
     }
 
-    private doRequest(req: BackendSrvRequest): Q.Promise<BackendSrvResponse> {
+    private doRequest(req: BackendSrvRequest): Promise<BackendSrvResponse> {
         req.headers = this.headers;
         req.withCredentials = this.withCredentials;
         this.log("doRequest: " + JSON.stringify(req));
         return this.backendSrv.datasourceRequest(req);
     }
 
-    private doRequestTargets(targets: QueryOptionsTarget[], options: QueryOptions): Q.Promise<BackendSrvResponse>[] {
+    private doRequestTargets(targets: QueryOptionsTarget[], options: QueryOptions): Promise<BackendSrvResponse>[] {
         const promises = [];
 
         for (let target of targets) {
@@ -244,16 +245,17 @@ export class BaasDatasource implements Datasource {
 
     /**
      * Test datasource connection.
-     * @return {Q.Promise<TestDatasourceResult>} result
+     * @return {Promise<TestDatasourceResult>} result
      */
-    testDatasource(): Q.Promise<TestDatasourceResult> {
+    testDatasource(): Promise<TestDatasourceResult> {
         this.log("testDatasource");
         return this.doRequest({
             url: this.baseUri + "/1/" + this.tenantId + "/buckets/object",
             method: "GET"
         }).then((response) => {
             this.log("status: " + response.status);
-            return {status: "success", message: "Server connected"};
+            let result: TestDatasourceResult = {status: "success", message: "Server connected"};
+            return result;
         }, (error) => {
             let message: string;
 
@@ -265,16 +267,17 @@ export class BaasDatasource implements Datasource {
                 message = "Connection failed"
             }
 
-            return {status: "error", message: message};
+            let result: TestDatasourceResult = {status: "error", message: message};
+            return result;
         });
     }
 
     /**
      * Annotation query. Not supported.
      * @param options
-     * @return {Q.Promise<any>}
+     * @return {Promise<any>}
      */
-    annotationQuery(options: any): Q.Promise<any> {
+    annotationQuery(options: any): Promise<any> {
         // nop
         return null;
     }
@@ -282,13 +285,13 @@ export class BaasDatasource implements Datasource {
     /**
      * Metric find query.
      * @param {string} query condition
-     * @return {Q.Promise<MetricFindQueryResult[]>} results
+     * @return {Promise<MetricFindQueryResult[]>} results
      */
-    metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]> {
+    metricFindQuery(query: string): Promise<MetricFindQueryResult[]> {
         this.log("metricFindQuery: " + query);
         if (query == 'buckets') {   // Get bucket list
             if (this.cacheBuckets != null) {
-                return this.$q.when(this.cacheBuckets);
+                return Promise.resolve(this.cacheBuckets);
             }
 
             // 実行中のリクエストがある場合はレスポンスを待つ
@@ -326,21 +329,21 @@ export class BaasDatasource implements Datasource {
                 for (let deferred of this.deferredBuckets) {
                     deferred.resolve(buckets);
                 }
-                this.deferredBuckets = null;
 
+                this.deferredBuckets = null;
                 return buckets;
             });
         }
 
-        return this.$q.when([]);
+        return Promise.resolve([]);
     }
 
     /**
      * Get latest object.
      * @param {string} bucket name
-     * @return {Q.Promise<object>} result
+     * @return {Promise<any>} result
      */
-    getLatestObject(bucket: string): Q.Promise<object> {
+    getLatestObject(bucket: string): Promise<any> {
         this.log("getLatestObject: " + bucket);
         return this.doRequest({
             url: this.baseUri + "/1/" + this.tenantId + "/objects/" + bucket + "/_query",

@@ -1,8 +1,6 @@
 // grafana sdk type decl (mock)
 
 declare module 'app/plugins/sdk' {
-    import * as Q from 'q';
-
     // app/features/panel/query_ctrl.ts
     export class QueryCtrl {
         constructor($scope: any, $injector: any);
@@ -19,7 +17,7 @@ declare module 'app/plugins/sdk' {
 
     // app/core/services/backend_srv.ts
     export class BackendSrv {
-        datasourceRequest(option: BackendSrvRequest): Q.Promise<BackendSrvResponse>;
+        datasourceRequest(option: BackendSrvRequest): Promise<BackendSrvResponse>;
     }
 
     // app/core/services/backend_srv.ts
@@ -45,10 +43,10 @@ declare module 'app/plugins/sdk' {
      * Datasource
      */
     export interface Datasource {
-        query(options: QueryOptions): Q.Promise<QueryResults>;
-        testDatasource(): Q.Promise<any>;
-        annotationQuery(options: any): Q.Promise<any>;
-        metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]>;
+        query(options: QueryOptions): Promise<QueryResults>;
+        testDatasource(): Promise<TestDatasourceResult>;
+        annotationQuery(options: any): Promise<any>;
+        metricFindQuery(query: string): Promise<MetricFindQueryResult[]>;
     }
 
     // Datasource query options
