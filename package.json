@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nec-baas/grafana-baas-object-datasource"
+    "url": "https://github.com/nec-baas/grafana-baas-object-datasource.git"
   },
   "author": "NEC Corporation",
   "license": "Apache-2.0",

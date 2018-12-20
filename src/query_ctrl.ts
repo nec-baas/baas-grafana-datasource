@@ -43,9 +43,9 @@ export class BaasDatasourceQueryCtrl extends QueryCtrl {
 
     /**
      * Get bucket list
-     * @return {Q.Promise<any>} bucket list
+     * @return {Promise<MetricFindQueryResult[]>} bucket list
      */
-    getBuckets(): Q.Promise<MetricFindQueryResult[]> {
+    getBuckets(): Promise<MetricFindQueryResult[]> {
         return this.datasource.metricFindQuery("buckets");
     }
 
