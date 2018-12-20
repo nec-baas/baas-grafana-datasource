@@ -26,9 +26,9 @@ export declare class BaasDatasourceQueryCtrl extends QueryCtrl {
     constructor($scope: any, $injector: any);
     /**
      * Get bucket list
-     * @return {Q.Promise<any>} bucket list
+     * @return {Promise<MetricFindQueryResult[]>} bucket list
      */
-    getBuckets(): Q.Promise<MetricFindQueryResult[]>;
+    getBuckets(): Promise<MetricFindQueryResult[]>;
     /**
      * onChange event (bucket name)
      */

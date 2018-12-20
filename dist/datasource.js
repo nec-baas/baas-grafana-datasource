@@ -44,7 +44,7 @@ System.register([], function (exports_1, context_1) {
                 /**
                  * Query metrics from data source.
                  * @param {module:app/plugins/sdk.QueryOptions} options
-                 * @return {Q.Promise<QueryResults>} results
+                 * @return {Promise<QueryResults>} results
                  */
                 BaasDatasource.prototype.query = function (options) {
                     var _this = this;
@@ -53,11 +53,11 @@ System.register([], function (exports_1, context_1) {
                         .filter(function (t) { return !t.hide; })
                         .filter(function (t) { return t.bucket && t.fieldName; });
                     if (targets.length <= 0) {
-                        return this.$q.when({ data: [] }); // no targets
+                        return Promise.resolve({ data: [] }); // no targets
                     }
                     var reqTargets = this.filterSameRequest(targets);
                     var promises = this.doRequestTargets(reqTargets, options);
-                    return this.$q.all(promises)
+                    return Promise.all(promises)
                         .then(function (responses) {
                         var results = [];
                         for (var _i = 0, targets_1 = targets; _i < targets_1.length; _i++) {
@@ -215,7 +215,7 @@ System.register([], function (exports_1, context_1) {
                 };
                 /**
                  * Test datasource connection.
-                 * @return {Q.Promise<TestDatasourceResult>} result
+                 * @return {Promise<TestDatasourceResult>} result
                  */
                 BaasDatasource.prototype.testDatasource = function () {
                     var _this = this;
@@ -225,7 +225,8 @@ System.register([], function (exports_1, context_1) {
                         method: "GET"
                     }).then(function (response) {
                         _this.log("status: " + response.status);
-                        return { status: "success", message: "Server connected" };
+                        var result = { status: "success", message: "Server connected" };
+                        return result;
                     }, function (error) {
                         var message;
                         if (error.data && error.data.error) {
@@ -237,13 +238,14 @@ System.register([], function (exports_1, context_1) {
                         else {
                             message = "Connection failed";
                         }
-                        return { status: "error", message: message };
+                        var result = { status: "error", message: message };
+                        return result;
                     });
                 };
                 /**
                  * Annotation query. Not supported.
                  * @param options
-                 * @return {Q.Promise<any>}
+                 * @return {Promise<any>}
                  */
                 BaasDatasource.prototype.annotationQuery = function (options) {
                     // nop
@@ -252,14 +254,14 @@ System.register([], function (exports_1, context_1) {
                 /**
                  * Metric find query.
                  * @param {string} query condition
-                 * @return {Q.Promise<MetricFindQueryResult[]>} results
+                 * @return {Promise<MetricFindQueryResult[]>} results
                  */
                 BaasDatasource.prototype.metricFindQuery = function (query) {
                     var _this = this;
                     this.log("metricFindQuery: " + query);
                     if (query == 'buckets') { // Get bucket list
                         if (this.cacheBuckets != null) {
-                            return this.$q.when(this.cacheBuckets);
+                            return Promise.resolve(this.cacheBuckets);
                         }
                         // 実行中のリクエストがある場合はレスポンスを待つ
                         if (this.deferredBuckets != null) {
@@ -299,12 +301,12 @@ System.register([], function (exports_1, context_1) {
                             return buckets;
                         });
                     }
-                    return this.$q.when([]);
+                    return Promise.resolve([]);
                 };
                 /**
                  * Get latest object.
                  * @param {string} bucket name
-                 * @return {Q.Promise<object>} result
+                 * @return {Promise<any>} result
                  */
                 BaasDatasource.prototype.getLatestObject = function (bucket) {
                     var _this = this;

@@ -7,7 +7,7 @@ System.register(["app/plugins/sdk", "./field_completer"], function (exports_1, c
                 ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
                 function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
             return extendStatics(d, b);
-        }
+        };
         return function (d, b) {
             extendStatics(d, b);
             function __() { this.constructor = d; }
@@ -47,7 +47,7 @@ System.register(["app/plugins/sdk", "./field_completer"], function (exports_1, c
                 }
                 /**
                  * Get bucket list
-                 * @return {Q.Promise<any>} bucket list
+                 * @return {Promise<MetricFindQueryResult[]>} bucket list
                  */
                 BaasDatasourceQueryCtrl.prototype.getBuckets = function () {
                     return this.datasource.metricFindQuery("buckets");

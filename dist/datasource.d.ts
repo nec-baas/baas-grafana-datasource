@@ -1,5 +1,6 @@
 /// <reference path="grafana-sdk.d.ts" />
 import { Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget, TimeSerieQueryResult, QueryResults, TestDatasourceResult, MetricFindQueryResult } from "app/plugins/sdk";
+import * as Q from 'q';
 /**
  * BaaS Datasource
  */
@@ -12,7 +13,7 @@ export declare class BaasDatasource implements Datasource {
     tenantId: string;
     headers: any;
     withCredentials: boolean;
-    cacheBuckets: string[];
+    cacheBuckets: MetricFindQueryResult[];
     deferredBuckets: Q.Deferred<MetricFindQueryResult[]>[];
     private log;
     /**
@@ -27,9 +28,9 @@ export declare class BaasDatasource implements Datasource {
     /**
      * Query metrics from data source.
      * @param {module:app/plugins/sdk.QueryOptions} options
-     * @return {Q.Promise<QueryResults>} results
+     * @return {Promise<QueryResults>} results
      */
-    query(options: QueryOptions): Q.Promise<QueryResults>;
+    query(options: QueryOptions): Promise<QueryResults>;
     private buildQueryParameters;
     private filterSameRequest;
     private doRequest;
@@ -57,25 +58,25 @@ export declare class BaasDatasource implements Datasource {
     extractTimestamp(obj: any, tsField: string): Date;
     /**
      * Test datasource connection.
-     * @return {Q.Promise<TestDatasourceResult>} result
+     * @return {Promise<TestDatasourceResult>} result
      */
-    testDatasource(): Q.Promise<TestDatasourceResult>;
+    testDatasource(): Promise<TestDatasourceResult>;
     /**
      * Annotation query. Not supported.
      * @param options
-     * @return {Q.Promise<any>}
+     * @return {Promise<any>}
      */
-    annotationQuery(options: any): Q.Promise<any>;
+    annotationQuery(options: any): Promise<any>;
     /**
      * Metric find query.
      * @param {string} query condition
-     * @return {Q.Promise<MetricFindQueryResult[]>} results
+     * @return {Promise<MetricFindQueryResult[]>} results
      */
-    metricFindQuery(query: string): Q.Promise<MetricFindQueryResult[]>;
+    metricFindQuery(query: string): Promise<MetricFindQueryResult[]>;
     /**
      * Get latest object.
      * @param {string} bucket name
-     * @return {Q.Promise<object>} result
+     * @return {Promise<any>} result
      */
-    getLatestObject(bucket: string): Q.Promise<object>;
+    getLatestObject(bucket: string): Promise<any>;
 }
