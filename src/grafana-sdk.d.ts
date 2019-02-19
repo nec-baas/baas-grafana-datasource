@@ -1,5 +1,29 @@
 // grafana sdk type decl (mock)
 
+declare module 'app/core/table_model' {
+    //app/core/table_model.ts
+    export default class TableModel {
+        columns: Column[];
+        rows: any[];
+        type: string;
+        columnMap: any;
+
+        constructor(table?: any);
+        addColumn(col: Column);
+        addRow(row: any);
+    }
+
+    export interface Column {
+        text: string;
+        title?: string;
+        type?: string;
+        sort?: boolean;
+        desc?: boolean;
+        filterable?: boolean;
+        unit?: string;
+    }
+}
+
 declare module 'app/plugins/sdk' {
     // app/features/panel/query_ctrl.ts
     export class QueryCtrl {
@@ -65,13 +89,22 @@ declare module 'app/plugins/sdk' {
     export interface QueryOptionsTarget {
         refId?: string;
         bucket: string;
-        fieldName: string;
+        format?: string; // Required since v7.5.1
+        dataField?: DataField[]; // Required since v7.5.1
+        fieldName?: string; // Ignored since v7.5.1
         tsField?: string;
         aggr?: string;
-        alias?: string;
+        alias?: string; // Ignored since v7.5.1
         hide?: boolean;
         type?: string;
         reqIndex?: number;
+        createDataWith?: string; // Required since v7.5.1
+        seriesNameKey?: string; // Required since v7.5.1
+        seriesValueKey?: string; // Required since v7.5.1
+    }
+    export interface DataField {
+        fieldName: string;
+        alias: string;
     }
 
     // BackendSrv.datasourceRequest request
@@ -92,9 +125,9 @@ declare module 'app/plugins/sdk' {
 
     // Datasource.query response
     export interface QueryResults {
-        data: TimeSerieQueryResult[];
+        data: TimeSeriesQueryResult[];
     }
-    export interface TimeSerieQueryResult {
+    export interface TimeSeriesQueryResult {
         target: string,
         datapoints: any[]; // array of [value, epoch]
     }

@@ -1,8 +1,9 @@
 /// <reference path="./grafana-sdk.d.ts" />
 
 import {Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget,
-        BackendSrvRequest, BackendSrvResponse, TimeSerieQueryResult, QueryResults,
+        BackendSrvRequest, BackendSrvResponse, TimeSeriesQueryResult, QueryResults,
         TestDatasourceResult, MetricFindQueryResult} from "app/plugins/sdk";
+import TableModel from 'app/core/table_model';
 import * as Q from 'q';
 
 /**
@@ -60,8 +61,15 @@ export class BaasDatasource implements Datasource {
     query(options: QueryOptions): Promise<QueryResults> {
         this.log("query: " + JSON.stringify(options));
         const targets = this.buildQueryParameters(options)
-            .filter(t => !t.hide)
-            .filter(t => t.bucket && t.fieldName);
+            .filter(t => !t.hide && t.bucket)
+            .filter(t => {
+                if (t.createDataWith === 'series_name_value_key') {
+                    return t.seriesNameKey && t.seriesValueKey;
+                } else {
+                    t.dataField = t.dataField.filter(f => f.fieldName);
+                    return t.dataField.length != 0;
+                }
+            });
 
         if (targets.length <= 0) {
             return Promise.resolve({data: []}); // no targets
@@ -77,7 +85,20 @@ export class BaasDatasource implements Datasource {
                 for (let target of targets) {
                     const data = responses[target.reqIndex].data;
 
-                    results.push(this.convertResponse(target, data));
+                    if (target.format === 'table') {
+                        if (target.createDataWith === 'series_name_value_key') {
+                            results.push(...this.convertResponseToTableWithSeries(target, data));
+                        } else {
+                            results.push(...this.convertResponseToTableWithDataField(target, data));
+                        }
+                    } else {
+                        target.format = 'time_series';
+                        if (target.createDataWith === 'series_name_value_key') {
+                            results.push(...this.convertResponseWithSeries(target, data, options));
+                        } else {
+                            results.push(...this.convertResponseWithDataField(target, data, options));
+                        }
+                    }
                 }
 
                 return {data: results};
@@ -88,13 +109,30 @@ export class BaasDatasource implements Datasource {
         const targets = [];
 
         for (let target of options.targets) {
+            let dataField = target.dataField;
+            if (!target.dataField) {
+                // 旧バージョンのTarget型を変換する
+                if (target.fieldName) {
+                    dataField = [{fieldName: target.fieldName, alias: target.alias}];
+                } else {
+                    dataField = [];
+                }
+            }
+
+            dataField = dataField.map(f => {
+                return {fieldName: this.templateSrv.replace(f.fieldName), alias: f.alias};
+            });
+
             targets.push({
                 bucket: this.templateSrv.replace(target.bucket),
-                fieldName: this.templateSrv.replace(target.fieldName),
+                format: target.format || "time_series",
+                dataField: dataField,
                 tsField: this.templateSrv.replace(target.tsField) || "updatedAt",
                 aggr: target.aggr,
-                alias: target.alias,
-                hide: target.hide
+                hide: target.hide,
+                createDataWith: target.createDataWith || "data_field",
+                seriesNameKey: this.templateSrv.replace(target.seriesNameKey),
+                seriesValueKey: this.templateSrv.replace(target.seriesValueKey)
             });
         }
         return targets;
@@ -106,9 +144,20 @@ export class BaasDatasource implements Datasource {
         for (let target of targets) {
             target.reqIndex = null;
 
+            let targetAggrObj = {};
+            if (target.aggr) {
+                targetAggrObj = JSON.parse(target.aggr);
+            }
+
             for (let i = 0; i < reqTargets.length; i++) {
                 const reqTarget = reqTargets[i];
-                if (target.bucket == reqTarget.bucket && target.tsField == reqTarget.tsField && target.aggr == reqTarget.aggr) {
+                let reqTargetAggrObj = {};
+                if (reqTarget.aggr) {
+                    reqTargetAggrObj = JSON.parse(reqTarget.aggr);
+                }
+
+                if (target.bucket == reqTarget.bucket && target.tsField == reqTarget.tsField &&
+                    JSON.stringify(targetAggrObj) === JSON.stringify(reqTargetAggrObj)) {
                     target.reqIndex = i;
                     break;
                 }
@@ -177,33 +226,201 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * Convert http response of baas server to QueryResults.
+     * Convert http response of baas server to QueryResults with DataField.
      * @param target
      * @param data response data
-     * @return {module:app/plugins/sdk.TimeSerieQueryResult}
+     * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
      */
-    convertResponse(target: QueryOptionsTarget, data: any): TimeSerieQueryResult {
-        const key = target.fieldName;
-        const tsField = target.tsField;
-        const alias = target.alias || target.bucket + '.' + target.fieldName;
+    convertResponseWithDataField(target: QueryOptionsTarget, data: any, options: QueryOptions): TimeSeriesQueryResult[] {
+        let results = [];
+        for (let field of target.dataField) {
+            const alias = field.alias || target.bucket + '.' + field.fieldName;
 
-        // convert to datapoint
-        const datapoints = [];
+            // convert to datapoint
+            const datapoints = [];
+            for (let e of data.results) {
+                const datapoint = this.convertToDataPoint(e, field.fieldName, target.tsField, options);
+                if(datapoint){
+                    datapoints.push(datapoint);
+                }
+            }
+
+            results.push({
+                target: alias,
+                datapoints: datapoints
+            });
+        }
+        return results;
+    }
+
+    /**
+     * Convert http response of baas server to QueryResults with Series Name/Value.
+     * @param target
+     * @param data response data
+     * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
+     */
+    convertResponseWithSeries(target: QueryOptionsTarget, data: any, options: QueryOptions): TimeSeriesQueryResult[] {
+        let results = [];
         for (let e of data.results) {
-            const value = this.extractValue(e, key);
-            const ts = this.extractTimestamp(e, tsField);
-
-            if (value == null || ts == null) {
+            const name = this.extractValue(e, target.seriesNameKey);
+            if (name == null) {
                 continue;
             }
 
-            datapoints.push([value, ts.getTime()]);
+            // convert to datapoint
+            const datapoint = this.convertToDataPoint(e, target.seriesValueKey, target.tsField, options);
+            if (datapoint) {
+                const findIndex = results.findIndex(result => result.target === name);
+                if (findIndex < 0) {
+                    results.push({
+                        target: name,
+                        datapoints: [datapoint]
+                    });
+                } else {
+                    results[findIndex].datapoints.push(datapoint);
+                }
+            }
+        }
+        return results;
+    }
+
+    /**
+     * Convert http response of baas server to DataPoint.
+     * @param {*} element response object
+     * @param {string} valueKey
+     * @param {string} tsField
+     * @param {QueryOptions} options
+     * @returns {any[]} array of [value, epoch]
+     */
+    convertToDataPoint(element: any, valueKey: string, tsField: string, options: QueryOptions): any[] {
+        const value = this.extractValue(element, valueKey);
+        const ts = this.extractTimestamp(element, tsField);
+
+        if (value == null) {
+            return null;
         }
 
-        return {
-            target: alias,
-            datapoints: datapoints
-        };
+        let datapoint = [];
+        if (ts != null) {
+            datapoint = [value, ts.getTime()];
+        } else {
+            datapoint = [value, Date.parse(options.range.to)];
+        }
+        return datapoint;
+    }
+
+    /**
+     *Convert http response of baas server to TableModel with DataField.
+     * @param {QueryOptionsTarget} target
+     * @param {*} data response data
+     * @param {TableModel} tableModel for test
+     * @returns {TableModel[]}
+     */
+    convertResponseToTableWithDataField(target: QueryOptionsTarget, data: any, table?: TableModel): TableModel[] {
+        const labels = [];
+        table = table || new TableModel();
+
+        //Columns
+        for (let e of data.results) {
+            const ts = this.extractValue(e, target.tsField);
+            if (ts != null) {
+                table.addColumn({ text: 'Time' });
+                labels.push(target.tsField);
+                break;
+            }
+        }
+
+        for (let field of target.dataField) {
+            const fieldName = field.fieldName;
+            if (fieldName != null) {
+                const alias = field.alias || target.bucket + '.' + field.fieldName;
+                const findIndex = table.columns.findIndex(column => column.text === alias);
+                if (findIndex < 0) {
+                    table.addColumn({ text: alias });
+                    labels.push(fieldName);
+                }
+            }
+        }
+
+        // Rows
+        for (let e of data.results) {
+            const row = [];
+            let hasData = false;
+            for (let i = 0; i < labels.length; i++) {
+                if (i === 0 && labels[i] === target.tsField && table.columns[i].text === 'Time') {
+                    const ts = this.extractTimestamp(e, target.tsField);
+                    if (ts != null) {
+                        row.push(ts.getTime());
+                    } else {
+                        row.push(null);
+                    }
+                } else {
+                    const value = this.extractValue(e, labels[i]);
+                    if (value != null) {
+                        row.push(value);
+                        hasData = true;
+                    } else {
+                        row.push(null);
+                    }
+                }
+            }
+            if (hasData) {
+                table.addRow(row);
+            }
+        }
+        return [table];
+    }
+
+    /**
+     *Convert http response of baas server to TableModel with Series Name/Value.
+     * @param {QueryOptionsTarget} target
+     * @param {*} data response data
+     * @param {TableModel} tableModel for test
+     * @returns {TableModel[]}
+     */
+    convertResponseToTableWithSeries(target: QueryOptionsTarget, data: any, table?: TableModel): TableModel[] {
+        table = table || new TableModel();
+
+        //Columns
+        for (let e of data.results) {
+            const ts = this.extractValue(e, target.tsField);
+            if (ts != null) {
+                table.addColumn({ text: 'Time' });
+                break;
+            }
+        }
+        table.addColumn({ text: target.seriesNameKey });
+        table.addColumn({ text: target.seriesValueKey });
+
+        // Rows
+        for (let e of data.results) {
+            const row = [];
+            const name = this.extractValue(e, target.seriesNameKey);
+            const value = this.extractValue(e, target.seriesValueKey);
+
+            if (name == null || value == null) {
+                continue;
+            }
+
+            if (table.columns[0].text === 'Time' && table.columns.length >= 3) {
+                const ts = this.extractTimestamp(e, target.tsField);
+                if (ts != null) {
+                    row.push(ts.getTime());
+                } else {
+                    row.push(null);
+                }
+            }
+            row.push(name);
+            row.push(value);
+            const findIndex = table.rows.findIndex(findRow => findRow[table.columns.length - 2] === name);
+
+            if (findIndex < 0) {
+                table.addRow(row);
+            } else {
+                table.rows[findIndex] = row;
+            }
+        }
+        return [table];
     }
 
     /**

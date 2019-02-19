@@ -52,10 +52,33 @@ Dashboardを作成し、Data Source に上記で作成したデータソース�
 クエリ条件(target)は以下のように指定してください。
 
 * Bucket: BaaS JSON Object Storage のバケット名を指定します。
-* Alias: 凡例に表示する文字列を指定します。未入力の場合は、"bucket.Data filed" で表示されます。
-* Data field: JSONフィールド名を指定します。
+* Format as: 生成するデータのタイプを選択します。
+  * [Time series]： 時系列データを生成します
+  * [Table]： テーブルデータを生成します
+* Create data with: データの指定方式を選択します。
+  * [Data field]： データフィールド指定方式
+    * Data field: JSONフィールド名を指定します。
+    * Alias: 凡例に表示する文字列を指定します。未入力の場合は、"bucket.Data filed" で表示されます。
+  * [Series Name/Value key]： 系列名・系列値キー指定方式
+    * Series Name key: 系列名として使用するデータのJSONフィールド名を指定します。
+    * Series Value key: 系列値として使用するデータのJSONフィールド名を指定します。
 * Timestamp field: タイムスタンプのJSONフィールド名を指定します。未入力の場合は "updatedAt" が使用されます。
 * Aggregation pipeline: Aggregation pipeline を JSON配列で指定します。未入力の場合は全件検索が実行されます。
+
+### 生成データタイプ
+* 時系列データ  
+Graphパネル等で使用可能な時系列データを生成します。  
+取得データにTimestamp field が含まれていない場合は、Dashboard に設定されている時間範囲の終了時刻を使用して時系列データを生成します。
+
+* テーブルデータ  
+Tableパネル等で使用可能なテーブルデータを生成します。
+
+### データ指定方式
+* データフィールド指定方式  
+Data field に指定されたフィールドからデータを生成します。Alias に指定された文字列を凡例として表示します。Add Data field ボタンでデータフィールドを追加することができます。
+
+* 系列名・系列値キー指定方式  
+Series Name key に指定されたフィールドの値を系列名とし、Series Value key に指定されたフィールドの値を系列値としてデータを生成します。
 
 ### JSONフィールド名
 
@@ -98,6 +121,8 @@ MongoDB の Aggregation を指定することができます。
 検索条件を追加したい場合は、Aggregation で検索条件を指定してください。
 Aggregation pipelineは、JSON 配列で入力します。
 
+時系列データ選択時、$project等を使用して取得データのフィールドを選択する場合は、取得データにTimestamp field が含まれるようにしてください。
+
 以下に temperature が 50 以上のものを絞り込むときの設定例を示します。
 
 ##### Aggregation pipeline
@@ -118,6 +143,8 @@ Aggregation pipelineは、JSON 配列で入力します。
 
 * Bucket
 * Data field
+* Series Name key
+* Series Value key
 * Timestamp field
 
 Bucket には、BaaS API サーバから取得したバケット一覧を使用することができます。
@@ -129,6 +156,13 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 
 バージョン互換について
 ----------------------
+
+ver 7.5.0 と ver 7.5.1 には互換性があります。  
+バージョンアップ後は、下記のクエリ条件で動作します。
+* Format as　　　　: Time series（時系列データ）  
+* Create data with　: Data field（データフィールド指定方式）  
+* Data field(1行目)　: Data field（ver 7.5.0）  
+* Alias(1行目)　　 　: Alias（ver 7.5.0）  
 
 ver 0.0.5 以前 と ver 7.5.0 以降ではGrafanaプラグインとして互換性がありません。
 データソース設定、クエリ条件を再設定して使用してください。
