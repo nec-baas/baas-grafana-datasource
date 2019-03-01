@@ -110,7 +110,7 @@ export class BaasDatasource implements Datasource {
 
         for (let target of options.targets) {
             let dataField = target.dataField;
-            if (!target.dataField) {
+            if (!dataField) {
                 // 旧バージョンのTarget型を変換する
                 if (target.fieldName) {
                     dataField = [{fieldName: target.fieldName, alias: target.alias}];
@@ -333,7 +333,7 @@ export class BaasDatasource implements Datasource {
         for (let field of target.dataField) {
             const fieldName = field.fieldName;
             if (fieldName != null) {
-                const alias = field.alias || target.bucket + '.' + field.fieldName;
+                const alias = field.alias || target.bucket + '.' + fieldName;
                 const findIndex = table.columns.findIndex(column => column.text === alias);
                 if (findIndex < 0) {
                     table.addColumn({ text: alias });
@@ -424,7 +424,7 @@ export class BaasDatasource implements Datasource {
     }
 
     /**
-     * Extract value of specified filed from JSON.
+     * Extract value of specified field from JSON.
      * @param obj JSON Object
      * @param {string} key field name, separated with period.
      * @returns {any} value

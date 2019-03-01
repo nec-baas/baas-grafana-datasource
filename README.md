@@ -58,7 +58,7 @@ Dashboardを作成し、Data Source に上記で作成したデータソース�
 * Create data with: データの指定方式を選択します。
   * [Data field]： データフィールド指定方式
     * Data field: JSONフィールド名を指定します。
-    * Alias: 凡例に表示する文字列を指定します。未入力の場合は、"bucket.Data filed" で表示されます。
+    * Alias: 凡例に表示する文字列を指定します。未入力の場合は、"bucket.Data field" で表示されます。
   * [Series Name/Value key]： 系列名・系列値キー指定方式
     * Series Name key: 系列名として使用するデータのJSONフィールド名を指定します。
     * Series Value key: 系列値として使用するデータのJSONフィールド名を指定します。
@@ -153,6 +153,75 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 * General > Type を "Query" に設定
 * Query Options > Data source を NEC BaaS Object Storage Datasource で作成したデータソースに設定
 * Query Options > Query に "buckets" を入力
+
+### クエリ条件設定例
+対象データのフォーマットに応じた、各パネルでのクエリ条件の設定例を示します。
+
+#### 対象データ例 (1) 
+```json
+{ "temperature": 15, "humidity": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
+{ "temperature": 17, "humidity": 49, updatedAt: "2019-02-07T02:00:00.000Z" ... }
+{ "temperature": 18, "humidity": 48, updatedAt: "2019-02-07T03:00:00.000Z" ... }
+{ "temperature": 21, "humidity": 48, updatedAt: "2019-02-07T04:00:00.000Z" ... }
+{ "temperature": 25, "humidity": 48, updatedAt: "2019-02-07T05:00:00.000Z" ... }
+```
+##### 設定例
+| パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
+|--------|-----------|------------------|------------|-----------------|------------------|------|
+| **Graph** | Time series | Data field | temperature<br>humidity | - | - | temperature と humidity、２つのラインが表示されます |
+| **SingleStats** | Time series | Data field | temperature | - | - | temperatureフィールドについて、SingleStatsパネルの Optionsタブ＞Value＞Stat で選択した集計値が表示されます。 |
+| **Table** | Table | Data field | temperature<br>humidity | - | - | temperature と humidity を列項目としたテーブルが表示されます。 |
+| **Pie Chart** | - | - | - | - | - | ※Pie Chartパネルは取得データ数に最大3件という制限があるため、対象を集計済みデータとすることを推奨 |
+  
+#### 対象データ例 (2) 
+```json
+{ "type": "temperature", "value": 15, updatedAt: "2019-02-07T01:00:00.000Z" ... }
+{ "type": "humidity", "value": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
+{ "type": "temperature", "value": 17, updatedAt: "2019-02-07T02:00:00.000Z" ... }
+{ "type": "humidity", "value": 49, updatedAt: "2019-02-07T02:00:00.000Z" ... }
+{ "type": "temperature", "value": 18, updatedAt: "2019-02-07T03:00:00.000Z" ... }
+{ "type": "humidity", "value": 48, updatedAt: "2019-02-07T03:00:00.000Z" ... }
+```
+
+##### 設定例
+| パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
+|--------|-----------|------------------|------------|-----------------|------------------|------|
+| **Graph** | Time series | Series Name/Value key | - | type | value | temperature と humidity、２つのラインが表示される。 |
+| **SingleStats** | - | - | - | - | - | ※SingleStatsパネルは複数系列の表示に非対応 |
+| **Table** | Table | Series Name/Value key | - | type | value | type と value を列項目としたテーブルが表示される。type列にはtemperature と humidityが表示され、value列には各項目の最終取得値が表示される。 |
+| **Pie Chart** | - | - | - | - | - | ※Pie Chartパネルは取得データ数に最大3件という制限があるため、対象を集計済みデータとすることを推奨 |
+
+#### 対象データ例 (3)
+※Aggregation pipeline の使用を想定
+```json
+{ "High": 123 }
+{ "Middle": 456 }
+{ "Low": 78 }
+```
+
+##### 設定例
+| パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
+|--------|-----------|------------------|------------|-----------------|------------------|------|
+| **Graph** | - | - | - | - | - | ※ラインが表示されない |
+| **SingleStats** | Time series | Data field | High | - | - | High の値が表示される |
+| **Table** | Table | Data field | High<br>Middle<br>Low | - | - | High、Middle、Lowを列項目としたテーブルが表示される。 |
+| **Pie Chart** | Time series | Data field | High<br>Middle<br>Low | - | - | High、Middle、Lowの値が表示される |
+
+#### 対象データ例 (4) 
+※Aggregation pipeline の使用を想定
+```json
+{ "level": "High", "count": 123 }
+{ "level": "Middle", "count": 456 }
+{ "level": "Low", "count": 78 }
+```
+
+##### 設定例
+| パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
+|--------|-----------|------------------|------------|-----------------|------------------|------|
+| **Graph** | - | - | - | - | - | ※ラインが表示されない |
+| **SingleStats** | - | - | - | - | - | ※SingleStatsパネルは複数系列の表示に非対応 |
+| **Table** | Table | Series Name/Value key | - | level | count | level と count を列項目としたテーブルが表示される。level 列には High、Middle、Low が表示され、count列には各項目の値が表示される。 |
+| **Pie Chart** | Time series | Series Name/Value key | - | level | count | High、Middle、Low の値が表示される |
 
 バージョン互換について
 ----------------------
