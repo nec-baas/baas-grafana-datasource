@@ -154,10 +154,10 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 * Query Options > Data source を NEC BaaS Object Storage Datasource で作成したデータソースに設定
 * Query Options > Query に "buckets" を入力
 
-### クエリ条件設定例
-対象データのフォーマットに応じた、各パネルでのクエリ条件の設定例を示します。
+### クエリ条件の設定例
+可視化するデータのフォーマットに対する、各パネルのクエリ条件の設定例を記載します。
 
-#### 対象データ例 (1) 
+#### データ例1 (時系列データ1) 
 ```json
 { "temperature": 15, "humidity": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
 { "temperature": 17, "humidity": 49, updatedAt: "2019-02-07T02:00:00.000Z" ... }
@@ -168,12 +168,12 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 ##### 設定例
 | パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
 |--------|-----------|------------------|------------|-----------------|------------------|------|
-| **Graph** | Time series | Data field | temperature<br>humidity | - | - | temperature と humidity、２つのラインが表示されます |
-| **SingleStats** | Time series | Data field | temperature | - | - | temperatureフィールドについて、SingleStatsパネルの Optionsタブ＞Value＞Stat で選択した集計値が表示されます。 |
+| **Graph** | Time series | Data field | temperature<br>humidity | - | - | temperature と humidity の2つのラインが表示されます。 |
+| **SingleStats** | Time series | Data field | temperature | - | - | temperature フィールドについて、SingleStats パネルの Optionsタブ＞Value＞Stat で選択した集計値が表示されます。 |
 | **Table** | Table | Data field | temperature<br>humidity | - | - | temperature と humidity を列項目としたテーブルが表示されます。 |
-| **Pie Chart** | - | - | - | - | - | ※Pie Chartパネルは取得データ数に最大3件という制限があるため、対象を集計済みデータとすることを推奨 |
+| **Pie Chart** | - | - | - | - | - | ※時系列データに対する利用は非推奨 |
   
-#### 対象データ例 (2) 
+#### データ例2 (時系列データ2) 
 ```json
 { "type": "temperature", "value": 15, updatedAt: "2019-02-07T01:00:00.000Z" ... }
 { "type": "humidity", "value": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
@@ -186,12 +186,12 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 ##### 設定例
 | パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
 |--------|-----------|------------------|------------|-----------------|------------------|------|
-| **Graph** | Time series | Series Name/Value key | - | type | value | temperature と humidity、２つのラインが表示される。 |
-| **SingleStats** | - | - | - | - | - | ※SingleStatsパネルは複数系列の表示に非対応 |
-| **Table** | Table | Series Name/Value key | - | type | value | type と value を列項目としたテーブルが表示される。type列にはtemperature と humidityが表示され、value列には各項目の最終取得値が表示される。 |
-| **Pie Chart** | - | - | - | - | - | ※Pie Chartパネルは取得データ数に最大3件という制限があるため、対象を集計済みデータとすることを推奨 |
+| **Graph** | Time series | Series Name/Value key | - | type | value | temperature と humidity の2つのラインが表示されます。 |
+| **SingleStats** | - | - | - | - | - | ※本データフォーマットに対する利用は非推奨 |
+| **Table** | Table | Series Name/Value key | - | type | value | type と value を列項目としたテーブルが表示されます。type列には temperature と humidity が表示され、value 列には各項目の最終取得値が表示されます。 |
+| **Pie Chart** | - | - | - | - | - | ※時系列データに対する利用は非推奨 |
 
-#### 対象データ例 (3)
+#### データ例3 (集計データ1)
 ※Aggregation pipeline の使用を想定
 ```json
 { "High": 123 }
@@ -202,12 +202,12 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 ##### 設定例
 | パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
 |--------|-----------|------------------|------------|-----------------|------------------|------|
-| **Graph** | - | - | - | - | - | ※ラインが表示されない |
-| **SingleStats** | Time series | Data field | High | - | - | High の値が表示される |
-| **Table** | Table | Data field | High<br>Middle<br>Low | - | - | High、Middle、Lowを列項目としたテーブルが表示される。 |
-| **Pie Chart** | Time series | Data field | High<br>Middle<br>Low | - | - | High、Middle、Lowの値が表示される |
+| **Graph** | - | - | - | - | - | ※非対応 |
+| **SingleStats** | Time series | Data field | High | - | - | High の値が表示されます。 |
+| **Table** | Table | Data field | High<br>Middle<br>Low | - | - | High、Middle、Low を列項目としたテーブルが表示されます。 |
+| **Pie Chart** | Time series | Data field | High<br>Middle<br>Low | - | - | High、Middle、Low の値が表示されます。 |
 
-#### 対象データ例 (4) 
+#### データ例4 (集計データ2) 
 ※Aggregation pipeline の使用を想定
 ```json
 { "level": "High", "count": 123 }
@@ -218,10 +218,10 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 ##### 設定例
 | パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
 |--------|-----------|------------------|------------|-----------------|------------------|------|
-| **Graph** | - | - | - | - | - | ※ラインが表示されない |
-| **SingleStats** | - | - | - | - | - | ※SingleStatsパネルは複数系列の表示に非対応 |
-| **Table** | Table | Series Name/Value key | - | level | count | level と count を列項目としたテーブルが表示される。level 列には High、Middle、Low が表示され、count列には各項目の値が表示される。 |
-| **Pie Chart** | Time series | Series Name/Value key | - | level | count | High、Middle、Low の値が表示される |
+| **Graph** | - | - | - | - | - | ※非対応 |
+| **SingleStats** | - | - | - | - | - | ※本データフォーマットに対する利用は非推奨 |
+| **Table** | Table | Series Name/Value key | - | level | count | level と count を列項目としたテーブルが表示されます。level 列には High、Middle、Low が表示され、count 列には各項目の値が表示されます。 |
+| **Pie Chart** | Time series | Series Name/Value key | - | level | count | High、Middle、Low の値が表示されます。 |
 
 バージョン互換について
 ----------------------
