@@ -159,11 +159,11 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
 
 #### データ例1 (時系列データ1) 
 ```json
-{ "temperature": 15, "humidity": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
-{ "temperature": 17, "humidity": 49, updatedAt: "2019-02-07T02:00:00.000Z" ... }
-{ "temperature": 18, "humidity": 48, updatedAt: "2019-02-07T03:00:00.000Z" ... }
-{ "temperature": 21, "humidity": 48, updatedAt: "2019-02-07T04:00:00.000Z" ... }
-{ "temperature": 25, "humidity": 48, updatedAt: "2019-02-07T05:00:00.000Z" ... }
+{ "temperature": 15, "humidity": 50, "updatedAt": "2019-02-07T01:00:00.000Z" }
+{ "temperature": 17, "humidity": 49, "updatedAt": "2019-02-07T02:00:00.000Z" }
+{ "temperature": 18, "humidity": 48, "updatedAt": "2019-02-07T03:00:00.000Z" }
+{ "temperature": 21, "humidity": 48, "updatedAt": "2019-02-07T04:00:00.000Z" }
+{ "temperature": 25, "humidity": 48, "updatedAt": "2019-02-07T05:00:00.000Z" }
 ```
 ##### 設定例
 | パネル | Format as | Create data with | Data field | Series Name key | Series Value key | 表示 |
@@ -175,12 +175,12 @@ Bucket には、BaaS API サーバから取得したバケット一覧を使用�
   
 #### データ例2 (時系列データ2) 
 ```json
-{ "type": "temperature", "value": 15, updatedAt: "2019-02-07T01:00:00.000Z" ... }
-{ "type": "humidity", "value": 50, updatedAt: "2019-02-07T01:00:00.000Z" ... }
-{ "type": "temperature", "value": 17, updatedAt: "2019-02-07T02:00:00.000Z" ... }
-{ "type": "humidity", "value": 49, updatedAt: "2019-02-07T02:00:00.000Z" ... }
-{ "type": "temperature", "value": 18, updatedAt: "2019-02-07T03:00:00.000Z" ... }
-{ "type": "humidity", "value": 48, updatedAt: "2019-02-07T03:00:00.000Z" ... }
+{ "type": "temperature", "value": 15, "updatedAt": "2019-02-07T01:00:00.000Z" }
+{ "type": "humidity", "value": 50, "updatedAt": "2019-02-07T01:00:00.000Z" }
+{ "type": "temperature", "value": 17, "updatedAt": "2019-02-07T02:00:00.000Z" }
+{ "type": "humidity", "value": 49, "updatedAt": "2019-02-07T02:00:00.000Z" }
+{ "type": "temperature", "value": 18, "updatedAt": "2019-02-07T03:00:00.000Z" }
+{ "type": "humidity", "value": 48, "updatedAt": "2019-02-07T03:00:00.000Z" }
 ```
 
 ##### 設定例
