@@ -2,7 +2,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "target": "ES5",
-    "lib": ["dom", "ES2015"],
+    "lib": ["dom", "es2015"],
     "module": "system",
     "sourceMap": true,
     "declaration": true,
