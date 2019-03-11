@@ -1,18 +1,29 @@
 /// <reference path="grafana-sdk.d.ts" />
 import { QueryCtrl, MetricFindQueryResult } from 'app/plugins/sdk';
 import { FieldCompleter } from './field_completer';
+export interface DataField {
+    fieldName: string;
+    alias: string;
+}
 export interface Target {
     bucket: string;
-    fieldName: string;
+    format: string;
+    dataField: DataField[];
     tsField: string;
     aggr: string;
-    alias: string;
+    createDataWith: string;
+    seriesNameKey: string;
+    seriesValueKey: string;
 }
 /**
  * BaaS Datasource Query Controller
  */
 export declare class BaasDatasourceQueryCtrl extends QueryCtrl {
     static templateUrl: string;
+    /** Datasource format */
+    FORMATS: ReadonlyArray<any>;
+    /** Create Data Method */
+    CREATE_DATA_WITH: ReadonlyArray<any>;
     /** Old target */
     oldTarget: Target;
     /** Field completer */
@@ -34,9 +45,19 @@ export declare class BaasDatasourceQueryCtrl extends QueryCtrl {
      */
     onChangeBucket(): void;
     /**
-     * onChange event (field name)
+     * Add data field
      */
-    onChangeFieldName(): void;
+    addField(): void;
+    /**
+     * Remove data field
+     * @param index index of data field
+     */
+    removeField(index: any): void;
+    /**
+     * onChange event (field name)
+     * @param index index of data field
+     */
+    onChangeFieldName(index: any): void;
     /**
      * onChange event (timestamp field)
      */
@@ -50,4 +71,11 @@ export declare class BaasDatasourceQueryCtrl extends QueryCtrl {
      * Get completer
      */
     getCompleter(): FieldCompleter;
+    /**
+     * Get default datasource format
+     */
+    getDefaultFormat(): "table" | "time_series";
+    onChangeCreateDataWith(): void;
+    onChangeSeriesNameKey(): void;
+    onChangeSeriesValueKey(): void;
 }

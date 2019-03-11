@@ -1,10 +1,8 @@
 <query-editor-row query-ctrl="ctrl" has-text-edit-mode="false">
     <div class="gf-form-inline">
-        <input type="hidden" ng-model="ctrl.target.type" value="timeserie">
-
         <div class="gf-form">
-            <label class="gf-form-label query-keyword">Bucket</label>
-            <gf-form-dropdown css-class="width-20"
+            <label class="gf-form-label query-keyword width-5">Bucket</label>
+            <gf-form-dropdown css-class="width-20" 
                               placeholder="bucket name"
                               model="ctrl.target.bucket"
                               allow-custom="true"
@@ -13,47 +11,131 @@
                               on-change="ctrl.onChangeBucket()">
             </gf-form-dropdown>
         </div>
-
-        <div class="gf-form">
-            <label class="gf-form-label query-keyword">Alias</label>
-            <input type="text" class="gf-form-input" ng-model="ctrl.target.alias" spellcheck='false' placeholder="alias patterns (optional)" ng-blur="ctrl.refresh()">
-        </div>
-
         <div class="gf-form gf-form--grow">
             <div class="gf-form-label gf-form-label--grow"></div>
         </div>
     </div>
 
     <div class="gf-form-inline">
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10">Format as</label>
+            <select class="gf-form-input width-15"
+                    ng-model="ctrl.target.format"
+                    ng-options="f.value as f.text for f in ctrl.FORMATS"
+                    ng-change="ctrl.refresh()">
+            </select>
+        </div>
         <div class="gf-form gf-form--grow">
-            <label class="gf-form-label query-keyword width-10">Data field</label>
-            <code-editor content="ctrl.target.fieldName"
-                         datasource="ctrl.datasource"
-                         on-change="ctrl.onChangeFieldName()"
-                         get-completer="ctrl.getCompleter()">
-            </code-editor>
+            <div class="gf-form-label gf-form-label--grow"></div>
         </div>
     </div>
 
     <div class="gf-form-inline">
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10">Create data with</label>
+            <select class="gf-form-input width-15"
+                    ng-model="ctrl.target.createDataWith"
+                    ng-options="f.value as f.text for f in ctrl.CREATE_DATA_WITH"
+                    ng-change="ctrl.refresh()">
+            </select>
+        </div>
         <div class="gf-form gf-form--grow">
-            <label class="gf-form-label query-keyword width-10">Timestamp field</label>
+            <div class="gf-form-label gf-form-label--grow"></div>
+        </div>
+    </div>
+
+    <div class="gf-form-inline" ng-show="ctrl.target.createDataWith === 'series_name_value_key'">
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10" style="height:47px; display:flex; align-items:center;">Series Name key</label>
+            <code-editor content="ctrl.target.seriesNameKey"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeSeriesNameKey()"
+                         get-completer="ctrl.getCompleter()"
+                         data-max-lines="1">
+            </code-editor>
+        </div>
+ 
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10" style="height:47px; display:flex; align-items:center;">Series Value key</label>
+            <code-editor content="ctrl.target.seriesValueKey"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeSeriesValueKey()"
+                         get-completer="ctrl.getCompleter()"
+                         data-max-lines="1">
+            </code-editor>
+        </div>
+        <div class="gf-form gf-form--grow">
+            <div class="gf-form-label gf-form-label--grow" style="height:47px"></div>
+        </div>
+    </div>
+
+    <div class="gf-form-inline" 
+         ng-show="ctrl.target.createDataWith === 'data_field'"
+         ng-repeat="field in ctrl.target.dataField track by $index">
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10" style="height:47px; display:flex; align-items:center;">Data field</label>
+            <code-editor content="ctrl.target.dataField[$index].fieldName"
+                         datasource="ctrl.datasource"
+                         on-change="ctrl.onChangeFieldName($index)"
+                         get-completer="ctrl.getCompleter()"
+                         data-max-lines="1">
+            </code-editor>
+        </div>
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-5" style="height:47px; display:flex; align-items:center;">Alias</label>
+            <input type="text"
+                   class="gf-form-input width-15"
+                   style="height:47px"
+                   ng-model="ctrl.target.dataField[$index].alias"
+                   placeholder="alias patterns (optional)"
+                   ng-blur="ctrl.refresh()" />
+            <label class="gf-form-label query-keyword" style="height:47px; display:flex; align-items:center;">
+                <a ng-click="ctrl.removeField($index)">
+                    <i class="fa fa-remove"></i>
+                </a>
+            </label>
+        </div>
+        <div class="gf-form gf-form--grow">
+            <div class="gf-form-label gf-form-label--grow" style="height:47px"></div>
+        </div>
+    </div>
+
+    <div class="gf-form-inline" ng-show="ctrl.target.createDataWith === 'data_field'">
+        <div class="gf-form gf-form--grow">
+            <label class="gf-form-label">
+                <a ng-click="ctrl.addField()">Add Data field 
+                    <i class="fa fa-plus"></i>
+                </a>
+            </label>
+        </div>
+    </div>
+
+    <div class="gf-form-inline">
+        <div class="gf-form">
+            <label class="gf-form-label query-keyword width-10" style="height:47px; display:flex; align-items:center;">Timestamp field</label>
             <code-editor content="ctrl.target.tsField"
                          datasource="ctrl.datasource"
                          on-change="ctrl.onChangeTsField()"
-                         get-completer="ctrl.getCompleter()">
+                         get-completer="ctrl.getCompleter()"
+                         data-max-lines="1">
             </code-editor>
+        </div>
+        <div class="gf-form gf-form--grow">
+            <div class="gf-form-label gf-form-label--grow" style="height:47px"></div>
         </div>
     </div>
 
     <div class="gf-form-inline">
         <div class="gf-form gf-form--grow">
-            <label class="gf-form-label query-keyword width-10">Aggregation pipeline</label>
+            <label class="gf-form-label query-keyword width-10" style="height:100%; display:flex; align-items:center;">Aggregation pipeline</label>
             <code-editor content="ctrl.target.aggr"
                          data-mode="json"
                          datasource="ctrl.datasource"
                          on-change="ctrl.onChangeAggregate()">
             </code-editor>
+        </div>
+        <div class="gf-form gf-form--grow" style="min-height:47px">
+            <div class="gf-form-label gf-form-label--grow" style="height:100%"></div>
         </div>
     </div>
 </query-editor-row>

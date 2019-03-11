@@ -1,10 +1,14 @@
 /// <reference path="./grafana-sdk.d.ts" />
-System.register([], function (exports_1, context_1) {
+System.register(["app/core/table_model"], function (exports_1, context_1) {
     "use strict";
-    var BaasDatasource;
+    var table_model_1, BaasDatasource;
     var __moduleName = context_1 && context_1.id;
     return {
-        setters: [],
+        setters: [
+            function (table_model_1_1) {
+                table_model_1 = table_model_1_1;
+            }
+        ],
         execute: function () {/// <reference path="./grafana-sdk.d.ts" />
             /**
              * BaaS Datasource
@@ -50,8 +54,16 @@ System.register([], function (exports_1, context_1) {
                     var _this = this;
                     this.log("query: " + JSON.stringify(options));
                     var targets = this.buildQueryParameters(options)
-                        .filter(function (t) { return !t.hide; })
-                        .filter(function (t) { return t.bucket && t.fieldName; });
+                        .filter(function (t) { return !t.hide && t.bucket; })
+                        .filter(function (t) {
+                        if (t.createDataWith === 'series_name_value_key') {
+                            return t.seriesNameKey && t.seriesValueKey;
+                        }
+                        else {
+                            t.dataField = t.dataField.filter(function (f) { return f.fieldName; });
+                            return t.dataField.length != 0;
+                        }
+                    });
                     if (targets.length <= 0) {
                         return Promise.resolve({ data: [] }); // no targets
                     }
@@ -63,22 +75,55 @@ System.register([], function (exports_1, context_1) {
                         for (var _i = 0, targets_1 = targets; _i < targets_1.length; _i++) {
                             var target = targets_1[_i];
                             var data = responses[target.reqIndex].data;
-                            results.push(_this.convertResponse(target, data));
+                            if (target.format === 'table') {
+                                if (target.createDataWith === 'series_name_value_key') {
+                                    results.push.apply(results, _this.convertResponseToTableWithSeries(target, data));
+                                }
+                                else {
+                                    results.push.apply(results, _this.convertResponseToTableWithDataField(target, data));
+                                }
+                            }
+                            else {
+                                target.format = 'time_series';
+                                if (target.createDataWith === 'series_name_value_key') {
+                                    results.push.apply(results, _this.convertResponseWithSeries(target, data, options));
+                                }
+                                else {
+                                    results.push.apply(results, _this.convertResponseWithDataField(target, data, options));
+                                }
+                            }
                         }
                         return { data: results };
                     });
                 };
                 BaasDatasource.prototype.buildQueryParameters = function (options) {
+                    var _this = this;
                     var targets = [];
                     for (var _i = 0, _a = options.targets; _i < _a.length; _i++) {
                         var target = _a[_i];
+                        var dataField = target.dataField;
+                        if (!dataField) {
+                            // 旧バージョンのTarget型を変換する
+                            if (target.fieldName) {
+                                dataField = [{ fieldName: target.fieldName, alias: target.alias }];
+                            }
+                            else {
+                                dataField = [];
+                            }
+                        }
+                        dataField = dataField.map(function (f) {
+                            return { fieldName: _this.templateSrv.replace(f.fieldName), alias: f.alias };
+                        });
                         targets.push({
                             bucket: this.templateSrv.replace(target.bucket),
-                            fieldName: this.templateSrv.replace(target.fieldName),
+                            format: target.format || "time_series",
+                            dataField: dataField,
                             tsField: this.templateSrv.replace(target.tsField) || "updatedAt",
                             aggr: target.aggr,
-                            alias: target.alias,
-                            hide: target.hide
+                            hide: target.hide,
+                            createDataWith: target.createDataWith || "data_field",
+                            seriesNameKey: this.templateSrv.replace(target.seriesNameKey),
+                            seriesValueKey: this.templateSrv.replace(target.seriesValueKey)
                         });
                     }
                     return targets;
@@ -88,9 +133,18 @@ System.register([], function (exports_1, context_1) {
                     for (var _i = 0, targets_2 = targets; _i < targets_2.length; _i++) {
                         var target = targets_2[_i];
                         target.reqIndex = null;
+                        var targetAggrObj = {};
+                        if (target.aggr) {
+                            targetAggrObj = JSON.parse(target.aggr);
+                        }
                         for (var i = 0; i < reqTargets.length; i++) {
                             var reqTarget = reqTargets[i];
-                            if (target.bucket == reqTarget.bucket && target.tsField == reqTarget.tsField && target.aggr == reqTarget.aggr) {
+                            var reqTargetAggrObj = {};
+                            if (reqTarget.aggr) {
+                                reqTargetAggrObj = JSON.parse(reqTarget.aggr);
+                            }
+                            if (target.bucket == reqTarget.bucket && target.tsField == reqTarget.tsField &&
+                                JSON.stringify(targetAggrObj) === JSON.stringify(reqTargetAggrObj)) {
                                 target.reqIndex = i;
                                 break;
                             }
@@ -151,33 +205,213 @@ System.register([], function (exports_1, context_1) {
                     return promises;
                 };
                 /**
-                 * Convert http response of baas server to QueryResults.
+                 * Convert http response of baas server to QueryResults with DataField.
                  * @param target
                  * @param data response data
-                 * @return {module:app/plugins/sdk.TimeSerieQueryResult}
+                 * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
                  */
-                BaasDatasource.prototype.convertResponse = function (target, data) {
-                    var key = target.fieldName;
-                    var tsField = target.tsField;
-                    var alias = target.alias || target.bucket + '.' + target.fieldName;
-                    // convert to datapoint
-                    var datapoints = [];
-                    for (var _i = 0, _a = data.results; _i < _a.length; _i++) {
-                        var e = _a[_i];
-                        var value = this.extractValue(e, key);
-                        var ts = this.extractTimestamp(e, tsField);
-                        if (value == null || ts == null) {
-                            continue;
+                BaasDatasource.prototype.convertResponseWithDataField = function (target, data, options) {
+                    var results = [];
+                    for (var _i = 0, _a = target.dataField; _i < _a.length; _i++) {
+                        var field = _a[_i];
+                        var alias = field.alias || target.bucket + '.' + field.fieldName;
+                        // convert to datapoint
+                        var datapoints = [];
+                        for (var _b = 0, _c = data.results; _b < _c.length; _b++) {
+                            var e = _c[_b];
+                            var datapoint = this.convertToDataPoint(e, field.fieldName, target.tsField, options);
+                            if (datapoint) {
+                                datapoints.push(datapoint);
+                            }
                         }
-                        datapoints.push([value, ts.getTime()]);
+                        results.push({
+                            target: alias,
+                            datapoints: datapoints
+                        });
                     }
-                    return {
-                        target: alias,
-                        datapoints: datapoints
-                    };
+                    return results;
                 };
                 /**
-                 * Extract value of specified filed from JSON.
+                 * Convert http response of baas server to QueryResults with Series Name/Value.
+                 * @param target
+                 * @param data response data
+                 * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
+                 */
+                BaasDatasource.prototype.convertResponseWithSeries = function (target, data, options) {
+                    var results = [];
+                    var _loop_1 = function (e) {
+                        var name_1 = this_1.extractValue(e, target.seriesNameKey);
+                        if (name_1 == null) {
+                            return "continue";
+                        }
+                        // convert to datapoint
+                        var datapoint = this_1.convertToDataPoint(e, target.seriesValueKey, target.tsField, options);
+                        if (datapoint) {
+                            var findIndex = results.findIndex(function (result) { return result.target === name_1; });
+                            if (findIndex < 0) {
+                                results.push({
+                                    target: name_1,
+                                    datapoints: [datapoint]
+                                });
+                            }
+                            else {
+                                results[findIndex].datapoints.push(datapoint);
+                            }
+                        }
+                    };
+                    var this_1 = this;
+                    for (var _i = 0, _a = data.results; _i < _a.length; _i++) {
+                        var e = _a[_i];
+                        _loop_1(e);
+                    }
+                    return results;
+                };
+                /**
+                 * Convert http response of baas server to DataPoint.
+                 * @param {*} element response object
+                 * @param {string} valueKey
+                 * @param {string} tsField
+                 * @param {QueryOptions} options
+                 * @returns {any[]} array of [value, epoch]
+                 */
+                BaasDatasource.prototype.convertToDataPoint = function (element, valueKey, tsField, options) {
+                    var value = this.extractValue(element, valueKey);
+                    var ts = this.extractTimestamp(element, tsField);
+                    if (value == null) {
+                        return null;
+                    }
+                    var datapoint = [];
+                    if (ts != null) {
+                        datapoint = [value, ts.getTime()];
+                    }
+                    else {
+                        datapoint = [value, Date.parse(options.range.to)];
+                    }
+                    return datapoint;
+                };
+                /**
+                 *Convert http response of baas server to TableModel with DataField.
+                 * @param {QueryOptionsTarget} target
+                 * @param {*} data response data
+                 * @param {TableModel} tableModel for test
+                 * @returns {TableModel[]}
+                 */
+                BaasDatasource.prototype.convertResponseToTableWithDataField = function (target, data, table) {
+                    var labels = [];
+                    table = table || new table_model_1.default();
+                    //Columns
+                    for (var _i = 0, _a = data.results; _i < _a.length; _i++) {
+                        var e = _a[_i];
+                        var ts = this.extractValue(e, target.tsField);
+                        if (ts != null) {
+                            table.addColumn({ text: 'Time' });
+                            labels.push(target.tsField);
+                            break;
+                        }
+                    }
+                    var _loop_2 = function (field) {
+                        var fieldName = field.fieldName;
+                        if (fieldName != null) {
+                            var alias_1 = field.alias || target.bucket + '.' + fieldName;
+                            var findIndex = table.columns.findIndex(function (column) { return column.text === alias_1; });
+                            if (findIndex < 0) {
+                                table.addColumn({ text: alias_1 });
+                                labels.push(fieldName);
+                            }
+                        }
+                    };
+                    for (var _b = 0, _c = target.dataField; _b < _c.length; _b++) {
+                        var field = _c[_b];
+                        _loop_2(field);
+                    }
+                    // Rows
+                    for (var _d = 0, _e = data.results; _d < _e.length; _d++) {
+                        var e = _e[_d];
+                        var row = [];
+                        var hasData = false;
+                        for (var i = 0; i < labels.length; i++) {
+                            if (i === 0 && labels[i] === target.tsField && table.columns[i].text === 'Time') {
+                                var ts = this.extractTimestamp(e, target.tsField);
+                                if (ts != null) {
+                                    row.push(ts.getTime());
+                                }
+                                else {
+                                    row.push(null);
+                                }
+                            }
+                            else {
+                                var value = this.extractValue(e, labels[i]);
+                                if (value != null) {
+                                    row.push(value);
+                                    hasData = true;
+                                }
+                                else {
+                                    row.push(null);
+                                }
+                            }
+                        }
+                        if (hasData) {
+                            table.addRow(row);
+                        }
+                    }
+                    return [table];
+                };
+                /**
+                 *Convert http response of baas server to TableModel with Series Name/Value.
+                 * @param {QueryOptionsTarget} target
+                 * @param {*} data response data
+                 * @param {TableModel} tableModel for test
+                 * @returns {TableModel[]}
+                 */
+                BaasDatasource.prototype.convertResponseToTableWithSeries = function (target, data, table) {
+                    table = table || new table_model_1.default();
+                    //Columns
+                    for (var _i = 0, _a = data.results; _i < _a.length; _i++) {
+                        var e = _a[_i];
+                        var ts = this.extractValue(e, target.tsField);
+                        if (ts != null) {
+                            table.addColumn({ text: 'Time' });
+                            break;
+                        }
+                    }
+                    table.addColumn({ text: target.seriesNameKey });
+                    table.addColumn({ text: target.seriesValueKey });
+                    var _loop_3 = function (e) {
+                        var row = [];
+                        var name_2 = this_2.extractValue(e, target.seriesNameKey);
+                        var value = this_2.extractValue(e, target.seriesValueKey);
+                        if (name_2 == null || value == null) {
+                            return "continue";
+                        }
+                        if (table.columns[0].text === 'Time' && table.columns.length >= 3) {
+                            var ts = this_2.extractTimestamp(e, target.tsField);
+                            if (ts != null) {
+                                row.push(ts.getTime());
+                            }
+                            else {
+                                row.push(null);
+                            }
+                        }
+                        row.push(name_2);
+                        row.push(value);
+                        var findIndex = table.rows.findIndex(function (findRow) { return findRow[table.columns.length - 2] === name_2; });
+                        if (findIndex < 0) {
+                            table.addRow(row);
+                        }
+                        else {
+                            table.rows[findIndex] = row;
+                        }
+                    };
+                    var this_2 = this;
+                    // Rows
+                    for (var _b = 0, _c = data.results; _b < _c.length; _b++) {
+                        var e = _c[_b];
+                        _loop_3(e);
+                    }
+                    return [table];
+                };
+                /**
+                 * Extract value of specified field from JSON.
                  * @param obj JSON Object
                  * @param {string} key field name, separated with period.
                  * @returns {any} value

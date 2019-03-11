@@ -1,5 +1,6 @@
 /// <reference path="grafana-sdk.d.ts" />
-import { Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget, TimeSerieQueryResult, QueryResults, TestDatasourceResult, MetricFindQueryResult } from "app/plugins/sdk";
+import { Datasource, BackendSrv, TemplateSrv, InstanceSettings, QueryOptions, QueryOptionsTarget, TimeSeriesQueryResult, QueryResults, TestDatasourceResult, MetricFindQueryResult } from "app/plugins/sdk";
+import TableModel from 'app/core/table_model';
 import * as Q from 'q';
 /**
  * BaaS Datasource
@@ -36,14 +37,46 @@ export declare class BaasDatasource implements Datasource {
     private doRequest;
     private doRequestTargets;
     /**
-     * Convert http response of baas server to QueryResults.
+     * Convert http response of baas server to QueryResults with DataField.
      * @param target
      * @param data response data
-     * @return {module:app/plugins/sdk.TimeSerieQueryResult}
+     * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
      */
-    convertResponse(target: QueryOptionsTarget, data: any): TimeSerieQueryResult;
+    convertResponseWithDataField(target: QueryOptionsTarget, data: any, options: QueryOptions): TimeSeriesQueryResult[];
     /**
-     * Extract value of specified filed from JSON.
+     * Convert http response of baas server to QueryResults with Series Name/Value.
+     * @param target
+     * @param data response data
+     * @return {module:app/plugins/sdk.TimeSeriesQueryResult[]}
+     */
+    convertResponseWithSeries(target: QueryOptionsTarget, data: any, options: QueryOptions): TimeSeriesQueryResult[];
+    /**
+     * Convert http response of baas server to DataPoint.
+     * @param {*} element response object
+     * @param {string} valueKey
+     * @param {string} tsField
+     * @param {QueryOptions} options
+     * @returns {any[]} array of [value, epoch]
+     */
+    convertToDataPoint(element: any, valueKey: string, tsField: string, options: QueryOptions): any[];
+    /**
+     *Convert http response of baas server to TableModel with DataField.
+     * @param {QueryOptionsTarget} target
+     * @param {*} data response data
+     * @param {TableModel} tableModel for test
+     * @returns {TableModel[]}
+     */
+    convertResponseToTableWithDataField(target: QueryOptionsTarget, data: any, table?: TableModel): TableModel[];
+    /**
+     *Convert http response of baas server to TableModel with Series Name/Value.
+     * @param {QueryOptionsTarget} target
+     * @param {*} data response data
+     * @param {TableModel} tableModel for test
+     * @returns {TableModel[]}
+     */
+    convertResponseToTableWithSeries(target: QueryOptionsTarget, data: any, table?: TableModel): TableModel[];
+    /**
+     * Extract value of specified field from JSON.
      * @param obj JSON Object
      * @param {string} key field name, separated with period.
      * @returns {any} value
